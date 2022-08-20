@@ -1,6 +1,6 @@
 package App::paperback;
 
-use v5.6;
+use v5.10;
 use strict;
 # use warnings;
 
@@ -62,7 +62,7 @@ my ( $IN_FILE, $OUT_FILE );
 ##########################################################
 sub main {
 ##########################################################
-  my $VERSION = 0.33;
+  my $VERSION = 0.34;
   my $input = $ARGV[0];
   my $num_pag_input; my $pgSizeInput;
   my $numPagImposed = 0;
@@ -822,7 +822,7 @@ __END__
 
 =head1 NAME
 
- App::Paperback - Copy and transform pages from a PDF into a new PDF
+App::Paperback - Copy and transform pages from a PDF into a new PDF
 
 =head1 SYNOPSIS
 
@@ -835,8 +835,8 @@ __END__
  my $newPositionYinPoints   = 150;
  my $rotate                 = 90;
  my ($numPages, $paperSize) = openInputFile($inputFile);
- openOutputFile();
- newPageInOutputFile($outputFile);
+ openOutputFile($outputFile);
+ newPageInOutputFile();
  copyPageFromInputToOutput(
    {
      page => $desiredPage,
@@ -850,12 +850,14 @@ __END__
 
 =head1 DESCRIPTION
 
- This module allows you to transform pages from an input PDF file
- into a new PDF file. Input PDF should:
+This module allows you to transform pages from an input PDF file
+into a new PDF file. Input PDF should:
 
- 1. Conform to version 1.4 of PDF;
- 2. Consist of vertical-oriented pages of the same size;
- 3. Use page sizes of A5 or A6 or Half Letter or Quarter Letter
-    or Half Legal or Quarter Legal.
+1. Conform to version 1.4 of PDF;
+
+2. Consist of vertical-oriented pages of the same size;
+
+3. Use page sizes of A5 or A6 or Half Letter or Quarter Letter
+or Half Legal or Quarter Legal.
 
 =cut

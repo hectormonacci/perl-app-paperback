@@ -1,12 +1,12 @@
-use 5.012000;
+use 5.010000;
 use strict;
 use warnings;
 use ExtUtils::MakeMaker;
 
 WriteMakefile(
 	NAME => 'App::paperback',
-	VERSION => '0.33',
-	MIN_PERL_VERSION => '5.006000',
+	VERSION => '0.34',
+	MIN_PERL_VERSION => '5.010000',
 
 	EXE_FILES => [
 		'bin/paperback',
