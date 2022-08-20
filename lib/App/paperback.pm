@@ -62,7 +62,7 @@ my ( $IN_FILE, $OUT_FILE );
 ##########################################################
 sub main {
 ##########################################################
-  my $VERSION = 0.34;
+  my $VERSION = 0.35;
   my $input = $ARGV[0];
   my $num_pag_input; my $pgSizeInput;
   my $numPagImposed = 0;
@@ -628,7 +628,6 @@ sub xformObjForThisPage {
     $vector = $1;
   } else {
     return 0;
-    die "[!] PERRO";
   }
   $pageAccumulator = 0;
 

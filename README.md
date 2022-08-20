@@ -2,7 +2,7 @@
 A Perl module and standalone script for imposition of small pages on bigger paper.
 
 ## Code and documentation
-[App::paperback on CPAN](https://metacpan.org/dist/App-paperback)
+[App::paperback on CPAN](https://metacpan.org/dist/app-paperback)
 
 ## Bugs and feature requests
 Please use the Github's issue tracker to file both bugs and feature requests.
