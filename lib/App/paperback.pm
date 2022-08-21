@@ -3,6 +3,7 @@ package App::paperback;
 use v5.10;
 use strict;
 # use warnings;
+our $VERSION = 0.39;
 
 use Exporter;
 our @ISA    = qw(Exporter);
@@ -62,7 +63,6 @@ my ( $IN_FILE, $OUT_FILE );
 ##########################################################
 sub main {
 ##########################################################
-  my $VERSION = 0.38;
   my $input = $ARGV[0];
   my $num_pag_input; my $pgSizeInput;
   my $numPagImposed = 0;
@@ -821,7 +821,7 @@ __END__
 
 =head1 NAME
 
-App::Paperback - Copy and transform pages from a PDF into a new PDF
+App::paperback - Copy and transform pages from a PDF into a new PDF
 
 =head1 SYNOPSIS
 
@@ -836,14 +836,12 @@ App::Paperback - Copy and transform pages from a PDF into a new PDF
  my ($numPages, $paperSize) = openInputFile($inputFile);
  openOutputFile($outputFile);
  newPageInOutputFile();
- copyPageFromInputToOutput(
-   {
+ copyPageFromInputToOutput( {
      page => $desiredPage,
      rotate => $rotate,
      x => $newPositionXinPoints,
      y => $newPositionYinPoints
-   }
- );
+ } );
  closeInputFile();
  closeOutputFile();
 

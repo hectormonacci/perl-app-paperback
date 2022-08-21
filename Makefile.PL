@@ -5,7 +5,7 @@ use ExtUtils::MakeMaker;
 
 WriteMakefile(
 	NAME => 'App::paperback',
-	VERSION => '0.38',
+	VERSION => '0.39',
 	MIN_PERL_VERSION => '5.010000',
 
 	EXE_FILES => [
