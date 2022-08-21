@@ -1,5 +1,8 @@
 Revision history for Perl module and script App::paperback.
 
+0.37  Sun Aug 21 07:00:00 2022
+	- Add META file as expected by CPAN
+
 0.36  Sat Aug 20 21:00:00 2022
 	- Replace Unicode characters with ASCII, for cleaner output on Windows
 

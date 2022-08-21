@@ -5,3 +5,15 @@ blib/*
 MANIFEST*
 pm_to_blib
 *.tar.gz
+
+nytprof.out
+nytprof/
+
+*.bak
+*.old
+*~
+*.swp
+*.o
+*.obj
+
+/App-paperback-*
