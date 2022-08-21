@@ -9,7 +9,7 @@
       "perl_5"
    ],
    "meta-spec" : {
-      "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
+      "url" : "https://metacpan.org/pod/CPAN::Meta::Spec",
       "version" : 2
    },
    "name" : "App-paperback",
@@ -43,8 +43,8 @@
          }
       }
    },
-   "release_status" : "unstable",
-   "version" : "0.37",
+   "release_status" : "stable",
+   "version" : "0.38",
    "x_authority" : "cpan:MONACCI",
    "x_serialization_backend" : "JSON::PP version 4.07",
    "x_static_install" : 1

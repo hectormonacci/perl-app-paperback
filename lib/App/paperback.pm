@@ -62,7 +62,7 @@ my ( $IN_FILE, $OUT_FILE );
 ##########################################################
 sub main {
 ##########################################################
-  my $VERSION = 0.36;
+  my $VERSION = 0.38;
   my $input = $ARGV[0];
   my $num_pag_input; my $pgSizeInput;
   my $numPagImposed = 0;

@@ -1,5 +1,8 @@
 Revision history for Perl module and script App::paperback.
 
+0.38  Sun Aug 21 08:00:00 2022
+	- Mark as stable
+
 0.37  Sun Aug 21 07:00:00 2022
 	- Add META file as expected by CPAN
 

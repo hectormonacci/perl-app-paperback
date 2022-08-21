@@ -16,4 +16,6 @@ nytprof/
 *.o
 *.obj
 
-/App-paperback-*
+/app-paperback-*
+
+build
