@@ -3,7 +3,7 @@ package App::paperback;
 use v5.10;
 use strict;
 # use warnings;
-our $VERSION = 0.39;
+our $VERSION = 0.40;
 
 use Exporter;
 our @ISA    = qw(Exporter);
@@ -189,11 +189,10 @@ sub copyPageFromInputToOutput {
   die "[!] ${fSource} can't be used. Concatenate streams!" if !defined $refNr;
   die "[!] Page ${pagenumber} doesn't exist in file ${GinFile}" if !$refNr;
 
-  if ( defined $x and defined $y and defined $rotate ) {
-    $Gstream .= "q\n" . calcMatrix($x, $y, $rotate) ."\n/Gs0 gs\n/${name} Do\nQ\n";
-  } else {
-    $Gstream .= "\n/Gs0 gs\n/${name} Do\n";
-  }
+  $Gstream .= ( defined $x and defined $y and defined $rotate ) ?
+    "q\n" . calcMatrix($x, $y, $rotate) ."\n/Gs0 gs\n/${name} Do\nQ\n" :
+    "\n/Gs0 gs\n/${name} Do\n";
+
   $GpageXObject{$name} = $refNr;
 
   return;
@@ -232,18 +231,16 @@ sub writePageResourceDict {
 ##########################################################
   my $resourceDict = $_[0];
   my $resourceObject;
-  if ( exists $Gresources{$resourceDict} ) {
-    $resourceObject = $Gresources{$resourceDict};  # Found one identical, use it
-  } else {
-    ++$GobjNr;
-    if ( keys(%Gresources) < 10 ) {
-      $Gresources{$resourceDict} = $GobjNr;  # Save first 10 resources
-    }
-    $resourceObject = $GobjNr;
-    $Gobject[$GobjNr] = $Gpos;
-    $resourceDict   = "${GobjNr} 0 obj<<${resourceDict}>>endobj\n";
-    $Gpos += syswrite $OUT_FILE, $resourceDict;
-  }
+
+  # Found one identical, use it:
+  return $Gresources{$resourceDict} if exists $Gresources{$resourceDict};
+  ++$GobjNr;
+  # Save first 10 resources:
+  $Gresources{$resourceDict} = $GobjNr if keys(%Gresources) < 10;
+  $resourceObject = $GobjNr;
+  $Gobject[$GobjNr] = $Gpos;
+  $resourceDict   = "${GobjNr} 0 obj<<${resourceDict}>>endobj\n";
+  $Gpos += syswrite $OUT_FILE, $resourceDict;
   return $resourceObject;
 }
 
@@ -485,7 +482,7 @@ sub writeToBeCreated {
     my $new_one = $_->[1];
     $elObje = getObject($old_one);
     if ( $elObje =~ m'^(\d+ \d+ obj\s*<<)(.+)(>>\s*stream)'os ) {
-      $part  = $2;
+      $part = $2;
       $strPos = length($1) + length($2) + length($3);
       renew_ddR_and_populate_to_be_created($part);
       $out_line = "${new_one} 0 obj\n<<${part}>>stream";
@@ -510,11 +507,8 @@ sub getInputPageDimensions {
   my $elObje = getObject($Groot);
 
   # Find pages:
-  if ( $elObje =~ m'/Pages\s+(\d+)\s{1,2}\d+\s{1,2}R'os ) {
-    $elObje = getObject($1);
-  } else {
-    return "unknown";
-  }
+  return "unknown" unless $elObje =~ m'/Pages\s+(\d+)\s{1,2}\d+\s{1,2}R'os;
+  $elObje = getObject($1);
 
   $elObje = xformObjForThisPage($elObje, 1);
   (undef, undef) = getResources( $elObje );
@@ -579,11 +573,9 @@ sub getPage {
   my $elObje = getObject($Groot);
 
   # Find pages:
-  if ( $elObje =~ m'/Pages\s+(\d+)\s{1,2}\d+\s{1,2}R'os ) {
-    $elObje = getObject($1);
-  } else {
-    die "[!] Didn't find Pages section in '${GinFile}' - aborting";
-  }
+  die "[!] Didn't find Pages section in '${GinFile}' - aborting" 
+    unless $elObje =~ m'/Pages\s+(\d+)\s{1,2}\d+\s{1,2}R'os;
+  $elObje = getObject($1);
 
   $elObje = xformObjForThisPage($elObje, $pagenumber);
   ($formRes, $formCont) = getResources( $elObje );
@@ -624,11 +616,9 @@ sub xformObjForThisPage {
   my $elObje = $_[0]; my $pagenumber = $_[1];
   my ( $vector, @pageObj, @pageObjBackup, $pageAccumulator);
 
-  if ($elObje =~ m'/Kids\s*\[([^\]]+)'os ) {
-    $vector = $1;
-  } else {
-    return 0;
-  }
+  return 0 unless $elObje =~ m'/Kids\s*\[([^\]]+)'os;
+  $vector = $1;
+
   $pageAccumulator = 0;
 
   push @pageObj, $1 while $vector =~ m'(\d+)\s{1,2}\d+\s{1,2}R'go;
@@ -687,20 +677,18 @@ sub getResourcesFromObj {
   my $resources;
 
   if ( $obj =~ m'^(.+/Resources)'so ) {
-    if ( $obj =~ m'Resources(\s+\d+\s{1,2}\d+\s{1,2}R)'os ) { # Reference (95%)
-      $resources = $1;
-    } else {  # The resources are a dictionary. The whole is copied (morfologia.pdf)
-      my $k;
-      ( undef, $obj ) = split /\/Resources/, $obj;
-      $obj =~ s/<</#<</gs;
-      $obj =~ s/>>/>>#/gs;
-      for ( split /#/, $obj ) {
-        if ( m'\S's ) {
-          $resources .= $_;
-          ++$k if m'<<'s;
-          --$k if m'>>'s;
-          last if $k == 0;
-        }
+    return $1 if $obj =~ m'Resources(\s+\d+\s{1,2}\d+\s{1,2}R)'os; # Reference (95%)
+    # The resources are a dictionary. The whole is copied (morfologia.pdf):
+    my $k;
+    ( undef, $obj ) = split /\/Resources/, $obj;
+    $obj =~ s/<</#<</gs;
+    $obj =~ s/>>/>>#/gs;
+    for ( split /#/, $obj ) {
+      if ( m'\S's ) {
+        $resources .= $_;
+        ++$k if m'<<'s;
+        --$k if m'>>'s;
+        last if $k == 0;
       }
     }
   }
@@ -738,8 +726,8 @@ sub openInputFile {
 sub saveOldObjects {
 ##########################################################
   my $bytes = (stat($GinFile))[7];  # stat[7] = filesize
-  # Objects are sorted in reverse order
-  # (according to their offset in the file: last first)
+  # Objects are sorted numerically (<=>) and in reverse order ($b $a)
+  # according to their offset in the file: last first
   my @offset = sort { $GoldObject{$b} <=> $GoldObject{$a} } keys %GoldObject;
 
   my $saved;
@@ -837,10 +825,10 @@ App::paperback - Copy and transform pages from a PDF into a new PDF
  openOutputFile($outputFile);
  newPageInOutputFile();
  copyPageFromInputToOutput( {
-     page => $desiredPage,
+     page   => $desiredPage,
      rotate => $rotate,
-     x => $newPositionXinPoints,
-     y => $newPositionYinPoints
+     x      => $newPositionXinPoints,
+     y      => $newPositionYinPoints
  } );
  closeInputFile();
  closeOutputFile();

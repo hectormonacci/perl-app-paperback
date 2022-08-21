@@ -1,5 +1,8 @@
 Revision history for Perl module and script App::paperback.
 
+0.40  Sun Aug 21 18:00:00 2022
+	- Perlify some ifs and elses with postfix notation
+
 0.39  Sun Aug 21 12:00:00 2022
 	- Add CONTRIBUTING.md
 
