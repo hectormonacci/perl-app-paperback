@@ -14,4 +14,4 @@ coding style of the module. Let me know if you plan something
 bigger so we can talk it through.
 
 ### Author
-Héctor M. Monacci <hector.monacci@gmail.com>
+Hector M. Monacci <hector.monacci@gmail.com>

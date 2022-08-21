@@ -5,7 +5,7 @@ use ExtUtils::MakeMaker;
 
 WriteMakefile(
 	NAME => 'App::paperback',
-	VERSION => '0.35',
+	VERSION => '0.36',
 	MIN_PERL_VERSION => '5.010000',
 
 	EXE_FILES => [
@@ -31,6 +31,6 @@ WriteMakefile(
 	},
 
 	ABSTRACT => 'Perl program and module for page imposition',
-	AUTHOR   => 'Héctor M. Monacci <hector.monacci@gmail.com>',
+	AUTHOR   => 'Hector M. Monacci <hector.monacci@gmail.com>',
 	LICENSE  => 'perl',
 );

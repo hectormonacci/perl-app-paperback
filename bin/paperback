@@ -9,8 +9,6 @@ exit App::paperback->main(@ARGV);
 
 __END__
 
-=encoding utf-8
-
 =head1 NAME
 
 paperback - imposition of PDF pages for signature printing and bounding
@@ -34,7 +32,7 @@ Options:
 
 =head1 VERSION
 
-Version 0.35
+Version 0.36
 
 =head1 DESCRIPTION
 
@@ -42,7 +40,7 @@ This program takes a PDF whose pages are small in size (A6, A5, Quarter Letter,
 Half Letter, Quarter Legal and Half Legal are supported) and produces a new PDF
 file, A4 or Letter or Legal in page size, with the original pages arranged in
 the correct order to be printed, folded, cut, and sewn together in signatures.
-This transformation is called “imposition”.
+This transformation is called "imposition".
 
 All pages in the input PDF file will be imposed on a new PDF with
 bigger paper size, ready to be duplex-printed, folded and put together
@@ -53,8 +51,8 @@ ISO 216 normalised (international) page sizes:
 
 =over 4
 
-Input page sizes A6 (105 × 148 mm) and A5 (148 × 210 mm) produce
-an output page size of A4 (210 × 297 mm). Four A6 pages will be put
+Input page sizes A6 (105 x 148 mm) and A5 (148 x 210 mm) produce
+an output page size of A4 (210 x 297 mm). Four A6 pages will be put
 on each A4 page, or two A5 pages will be put on each A4 page. 
 Before that, input pages will be reordered and reoriented so as to
 produce a final PDF fit for duplex 'long-edge-flip' printing.
@@ -65,10 +63,10 @@ ANSI normalised (US) page sizes:
 
 =over 4
 
-Input page sizes Quarter Letter (4.25 × 5.5 in) and Half Letter (5.5
-× 8,5 in) produce a Letter output page size (8.5 × 11 in). Input
-page sizes Quarter Legal (4.25 × 7 in) and Half Legal (7 × 8,5 in)
-produce a Legal output page size (8.5 × 14 in). Four Quarter-Letter
+Input page sizes Quarter Letter (4.25 x 5.5 in) and Half Letter (5.5
+x 8,5 in) produce a Letter output page size (8.5 x 11 in). Input
+page sizes Quarter Legal (4.25 x 7 in) and Half Legal (7 x 8,5 in)
+produce a Legal output page size (8.5 x 14 in). Four Quarter-Letter
 pages will be put on each Letter page, two Half-Letter pages will be
 put on each Letter page, four Quarter-Legal pages will be put on each
 Legal page, or two Half-Legal pages will be put on each Legal page.
@@ -88,15 +86,15 @@ files stamped as something more modern.
 
 =head1 INSTALL
 
-$ cpanm App::paperback
+$ B<cpan App::paperback> (or B<sudo cpan App::paperback>)
 
 =head1 AUTHOR
 
-Héctor M. Monacci
+Hector M. Monacci
 
 =head1 LICENSE
 
-Copyright 2022 - Héctor M. Monacci.
+Copyright 2022 - Hector M. Monacci.
 
 This program is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.

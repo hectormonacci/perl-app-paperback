@@ -62,12 +62,12 @@ my ( $IN_FILE, $OUT_FILE );
 ##########################################################
 sub main {
 ##########################################################
-  my $VERSION = 0.35;
+  my $VERSION = 0.36;
   my $input = $ARGV[0];
   my $num_pag_input; my $pgSizeInput;
   my $numPagImposed = 0;
   my $sayUsage = "Usage: paperback file.pdf (will produce 'file-paperback.pdf').";
-  my $sayVersion = "This is paperback v${VERSION}, (c) 2022 Héctor M. Monacci.";
+  my $sayVersion = "This is paperback v${VERSION}, (c) 2022 Hector M. Monacci.";
   my $sayHelp = <<"END_MESSAGE";
 
 ${sayUsage}
@@ -86,18 +86,18 @@ ${sayUsage}
 
 ISO 216 normalised (international) page sizes:
 
-  Input page sizes A6 (105 × 148 mm) and A5 (148 × 210 mm) produce
-  an output page size of A4 (210 × 297 mm). Four A6 pages will be put
+  Input page sizes A6 (105 x 148 mm) and A5 (148 x 210 mm) produce
+  an output page size of A4 (210 x 297 mm). Four A6 pages will be put
   on each A4 page, or two A5 pages will be put on each A4 page. 
   Before that, input pages will be reordered and reoriented so as to
   produce a final PDF fit for duplex 'long-edge-flip' printing.
 
 ANSI normalised (US) page sizes:
 
-  Input page sizes Quarter Letter (4.25 × 5.5 in) and Half Letter (5.5
-  × 8,5 in) produce a Letter output page size (8.5 × 11 in). Input
-  page sizes Quarter Legal (4.25 × 7 in) and Half Legal (7 × 8,5 in)
-  produce a Legal output page size (8.5 × 14 in). Four Quarter-Letter
+  Input page sizes Quarter Letter (4.25 x 5.5 in) and Half Letter (5.5
+  x 8,5 in) produce a Letter output page size (8.5 x 11 in). Input
+  page sizes Quarter Legal (4.25 x 7 in) and Half Legal (7 x 8,5 in)
+  produce a Legal output page size (8.5 x 14 in). Four Quarter-Letter
   pages will be put on each Letter page, two Half-Letter pages will be
   put on each Letter page, four Quarter-Legal pages will be put on each
   Legal page, or two Half-Legal pages will be put on each Legal page.
@@ -520,7 +520,7 @@ sub getInputPageDimensions {
   (undef, undef) = getResources( $elObje );
   return 0 if ! defined $GformBox[2] or ! defined $GformBox[3];
   my $multi = int($GformBox[2]) * int($GformBox[3]);
-  my $measuresInMm = int($GformBox[2] / 72 * 25.4) . " × "
+  my $measuresInMm = int($GformBox[2] / 72 * 25.4) . " x "
     . int($GformBox[3] / 72 * 25.4) . " mm";
 
   if ($multi > 119_780 and $multi < 121_780) { # US 1/4 letter: 120780
