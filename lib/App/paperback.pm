@@ -137,7 +137,7 @@ END_MESSAGE
   my ($rotation, $target_page);
   for (0..$num_pliegos) {
     for (0..15) {
-      newPageInOutputFile() unless $_ % $pagesPerSheet > 0 or $numPagImposed == 0;
+      newPageInOutputFile() unless $_ % $pagesPerSheet > 0;
       $target_page = $p[$_] + ($numPagImposed >> 4) * 16;
       next if $target_page > $num_pag_input;
 
@@ -786,7 +786,6 @@ sub openOutputFile {
   $GobjNr      = 2;  # Objeto reservado 1 para raíz y 2 para nodo lateral inicial
   $Gparents[0] = 2;
 
-  newPageInOutputFile();
   setInitGrState();
   return;
 }
