@@ -50,12 +50,12 @@ my @Y_QG_ON_LG = ($IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$I
 
 # Page reordering and position offset schemas for "2 up":
 my @P_2_UP = (16,1,15,2,14,3,13,4,12,5,11,6,10,7,9,8);
-my @Y_A5_ON_A4 = ($BG,0,$AH,$BG,$BG,0,$AH,$BG,$BG,0,$AH,$BG,$BG,0,$AH,$BG);
 my @X_A5_ON_A4 = ($BH,$BH,0,0,$BH,$BH,0,0,$BH,$BH,0,0,$BH,$BH,0,0);
-my @Y_HT_ON_LT = ($EW,0,$DH,$EW,$EW,0,$DH,$EW,$EW,0,$DH,$EW,$EW,0,$DH,$EW);
+my @Y_A5_ON_A4 = ($BG,0,$AH,$BG,$BG,0,$AH,$BG,$BG,0,$AH,$BG,$BG,0,$AH,$BG);
 my @X_HT_ON_LT = ($EH,$EH,0,0,$EH,$EH,0,0,$EH,$EH,0,0,$EH,$EH,0,0);
-my @Y_HG_ON_LG = ($HW,0,$GH,$HW,$HW,0,$GH,$HW,$HW,0,$GH,$HW,$HW,0,$GH,$HW);
+my @Y_HT_ON_LT = ($EW,0,$DH,$EW,$EW,0,$DH,$EW,$EW,0,$DH,$EW,$EW,0,$DH,$EW);
 my @X_HG_ON_LG = ($HH,$HH,0,0,$HH,$HH,0,0,$HH,$HH,0,0,$HH,$HH,0,0);
+my @Y_HG_ON_LG = ($HW,0,$GH,$HW,$HW,0,$GH,$HW,$HW,0,$GH,$HW,$HW,0,$GH,$HW);
 
 my ( $IN_FILE, $OUT_FILE );
 
@@ -119,7 +119,7 @@ END_MESSAGE
   die "[!] File '$input' is not a valid v1.4 PDF file.\n"
     if $num_pag_input == 0;
 
-  my ($rot_extra, $pagesPerSheet, @x, @y, @p);
+  my ($pagesPerSheet, @x, @y);
   for ($pgSizeInput) {
        if ($_ eq "A6") { $pagesPerSheet = 4; @x = @X_A6_ON_A4; @y = @Y_A6_ON_A4; }
     elsif ($_ eq "A5") { $pagesPerSheet = 2; @x = @X_A5_ON_A4; @y = @Y_A5_ON_A4; }
@@ -130,14 +130,11 @@ END_MESSAGE
     else {die "[!] Bad page size ($pgSizeInput). See 'paperback -h' to learn more.\n"}
   }
 
-  my $rotation;
-  my $target_page;
   my ($name) = $input =~ /(.+)\.[^.]+$/;
-  my $num_pliegos;
-
   openOutputFile("${name}-paperback.pdf");
-  $num_pliegos = $num_pag_input >> 4;
-  ($rot_extra, @p) = $pagesPerSheet == 4 ? (0, @P_4_UP) : (90, @P_2_UP);
+  my $num_pliegos = $num_pag_input >> 4;
+  my ($rot_extra, @p) = $pagesPerSheet == 4 ? (0, @P_4_UP) : (90, @P_2_UP);
+  my ($rotation, $target_page);
   for (0..$num_pliegos) {
     for (0..15) {
       newPageInOutputFile() unless $_ % $pagesPerSheet > 0 or $numPagImposed == 0;
