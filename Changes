@@ -1,5 +1,8 @@
 Revision history for Perl module and script App::paperback.
 
+0.41  Mon Aug 22 07:00:00 2022
+	- Typo fixed (thanks go to William Lindley)
+
 0.40  Sun Aug 21 18:00:00 2022
 	- Perlify some ifs and elses with postfix notation
 

@@ -44,7 +44,7 @@
       }
    },
    "release_status" : "stable",
-   "version" : "0.40",
+   "version" : "0.41",
    "x_authority" : "cpan:MONACCI",
    "x_serialization_backend" : "JSON::PP version 4.07",
    "x_static_install" : 1

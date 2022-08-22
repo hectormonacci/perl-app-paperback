@@ -3,7 +3,7 @@ package App::paperback;
 use v5.10;
 use strict;
 # use warnings;
-our $VERSION = 0.40;
+our $VERSION = 0.41;
 
 use Exporter;
 our @ISA    = qw(Exporter);
@@ -591,7 +591,7 @@ sub getPage {
 ##########################################################
 sub writeRes {
 ##########################################################
-  my $elObje = $_[0]; my $formRes = $_[1]; my $formCont = $_[2];
+  my ($elObje, $formRes, $formCont) = ($_[0], $_[1], $_[2]);
   my $out_line;
 
   $elObje = getObject($formCont);

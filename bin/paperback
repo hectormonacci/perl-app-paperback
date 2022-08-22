@@ -11,7 +11,7 @@ __END__
 
 =head1 NAME
 
-paperback - imposition of PDF pages for signature printing and bounding
+paperback - imposition of PDF pages for signature printing and binding
 
 =head1 SYNOPSIS
 
@@ -32,7 +32,7 @@ Options:
 
 =head1 VERSION
 
-Version 0.40
+Version 0.41
 
 =head1 DESCRIPTION
 
