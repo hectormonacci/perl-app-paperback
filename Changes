@@ -1,5 +1,8 @@
 Revision history for Perl module and script App::paperback.
 
+0.42  Mon Aug 22 12:00:00 2022
+	-  Drop o switch in matches (William Lindley) and some useless variables
+
 0.41  Mon Aug 22 07:00:00 2022
 	- Typo fixed (thanks go to William Lindley)
 

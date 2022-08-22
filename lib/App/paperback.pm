@@ -3,7 +3,7 @@ package App::paperback;
 use v5.10;
 use strict;
 # use warnings;
-our $VERSION = "v0.41";
+our $VERSION = "v0.42";
 
 use Exporter;
 our @ISA    = qw(Exporter);
@@ -161,7 +161,7 @@ main() if not caller();
 ##########################################################
 sub newPageInOutputFile {
 ##########################################################
-  die "[!] No output file, you have to call openOutputFile first" if !$Gpos;
+  die "[!] No output file, you must call openOutputFile first" if !$Gpos;
   writePage() if defined $Gstream and length($Gstream) > 0;
 
   ++$GobjNr;
@@ -182,11 +182,11 @@ sub copyPageFromInputToOutput {
   my $y          = $param->{'y'}      or 0;
   my $rotate     = $param->{'rotate'} or 0;
 
-  my $fSource = "${GinFile}_${pagenumber}";
   ++$GformNr;
   my $name = "Fm${GformNr}";
   my $refNr = getPage( $pagenumber );
-  die "[!] ${fSource} can't be used. Concatenate streams!" if !defined $refNr;
+  die "[!] Page ${pagenumber} in ${GinFile} can't be used. Concatenate streams!" 
+  	if !defined $refNr;
   die "[!] Page ${pagenumber} doesn't exist in file ${GinFile}" if !$refNr;
 
   $Gstream .= ( defined $x and defined $y and defined $rotate ) ?
@@ -412,15 +412,15 @@ sub getRoot {
   sysseek $IN_FILE, -50, 2;
   sysread $IN_FILE, $buf, 100;
   die "[!] File ${GinFile} is encrypted, cannot be used, aborting"
-    if $buf =~ m'Encrypt'o;
-  if ( $buf =~ m'\bstartxref\s+(\d+)'o ) {
+    if $buf =~ m'Encrypt';
+  if ( $buf =~ m'\bstartxref\s+(\d+)' ) {
     $xref = $1;
     # stat[7] = filesize
     die "[!] Invalid XREF, aborting" if $xref > (stat($GinFile))[7];
     $tempRoot = getRootFromXrefSection( $xref );
   }
 
-  $tempRoot or return 0; # No Root object in ${GinFile}, aborting
+  return 0 unless $tempRoot; # No Root object in ${GinFile}, aborting
   saveOldObjects();
   return $tempRoot;
 }
@@ -438,7 +438,7 @@ sub getRootFromXrefSection {
   while ($qty) {
     for ( my $l = 1 ; $l <= $qty ; ++$l ) {
       sysread $IN_FILE, $incoming_line, 20;
-      if ( $incoming_line =~ m'^\s?(\d+) \d+ (\w)\s*'o ) {
+      if ( $incoming_line =~ m'^\s?(\d+) \d+ (\w)\s*' ) {
         $GoldObject{$i} = int($1) unless $2 ne "n" or exists $GoldObject{$i};
       }
       ++$i;
@@ -532,7 +532,7 @@ sub getInputPageDimensions {
     $GoHei = $GH;
     return "QG";
   }
-  if ($multi > 241_352 and $multi < 243_352) { # USstatement: 242352
+  if ($multi > 241_352 and $multi < 243_352) { # US 1/2 Letter ("statement"): 242352
     $GoWid  = $DW;
     $GoHei = $DH;
     return "HT";
@@ -567,9 +567,7 @@ sub getPage {
 
   my ( $reference, $formRes, $formCont );
 
-  my $fSource = "${GinFile}_${pagenumber}";
-
-  # Find root:
+    # Find root:
   my $elObje = getObject($Groot);
 
   # Find pages:
@@ -735,7 +733,7 @@ sub saveOldObjects {
   for (@offset) {
     $saved = $GoldObject{$_};
     $bytes -= $saved;
-    $GoldObject{$_} = [ $saved, $bytes ] if ($_ !~ m'^xref'o);
+    $GoldObject{$_} = [ $saved, $bytes ] if ($_ !~ m'^xref');
     $bytes = $saved;
   }
 }
@@ -766,7 +764,7 @@ sub extractContent {
     $incoming_line .= $c;
     sysread $IN_FILE, $c, 1;
   }
-  if ( $incoming_line =~ m'^(\d+)\s+(\d+)'o ) {
+  if ( $incoming_line =~ m'^(\d+)\s+(\d+)' ) {
     $i   = $1;
     $qty = $2;
   }
