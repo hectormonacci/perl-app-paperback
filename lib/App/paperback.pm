@@ -3,7 +3,7 @@ package App::paperback;
 use v5.10;
 use strict;
 # use warnings;
-our $VERSION = "0.41";
+our $VERSION = "v0.41";
 
 use Exporter;
 our @ISA    = qw(Exporter);
@@ -67,7 +67,7 @@ sub main {
   my $num_pag_input; my $pgSizeInput;
   my $numPagImposed = 0;
   my $sayUsage = "Usage: paperback file.pdf (will produce 'file-paperback.pdf').";
-  my $sayVersion = "This is paperback v${VERSION}, (c) 2022 Hector M. Monacci.";
+  my $sayVersion = "This is paperback ${VERSION}, (c) 2022 Hector M. Monacci.";
   my $sayHelp = <<"END_MESSAGE";
 
 ${sayUsage}
