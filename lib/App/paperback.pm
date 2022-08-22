@@ -137,7 +137,7 @@ END_MESSAGE
   my ($rotation, $target_page);
   for (0..$num_pliegos) {
     for (0..15) {
-      newPageInOutputFile() unless $_ % $pagesPerSheet > 0;
+      newPageInOutputFile() if $_ % $pagesPerSheet == 0;
       $target_page = $p[$_] + ($numPagImposed >> 4) * 16;
       next if $target_page > $num_pag_input;
 
