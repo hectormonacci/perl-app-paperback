@@ -3,7 +3,7 @@ package App::paperback;
 use v5.10;
 use strict;
 # use warnings;
-our $VERSION = "v0.43";
+our $VERSION = "v1.00";
 
 use Exporter;
 our @ISA    = qw(Exporter);
@@ -52,7 +52,10 @@ my @X_QG_ON_LG = (0,$IW,$IW,$GW,0,$IW,$IW,$GW,0,$IW,$IW,$GW,0,$IW,$IW,$GW);
 my @Y_QG_ON_LG = ($IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH);
 
 # Page reordering and position offset schemas for "2 up":
-my @P_2_UP_13PLUS = (16,1,15,2,14,3,13,4,12,5,11,6,10,7,9,8);
+my @P_2UP_13PLUS = (1,16,2,15,3,14,4,13,5,12,6,11,7,10,8,9);
+my @P_2UP_9PLUS = (1,12,2,11,3,10,4,9,5,8,6,7);
+my @P_2UP_5PLUS = (1,8,2,7,3,6,4,5);
+my @P_2UP_1PLUS = (1,4,2,3);
 my @X_A5_ON_A4 = ($BH,$BH,0,0,$BH,$BH,0,0,$BH,$BH,0,0,$BH,$BH,0,0);
 my @Y_A5_ON_A4 = ($BG,0,$AH,$BG,$BG,0,$AH,$BG,$BG,0,$AH,$BG,$BG,0,$AH,$BG);
 my @X_HT_ON_LT = ($EH,$EH,0,0,$EH,$EH,0,0,$EH,$EH,0,0,$EH,$EH,0,0);
@@ -136,7 +139,7 @@ END_MESSAGE
   my ($name) = $input =~ /(.+)\.[^.]+$/;
   openOutputFile("${name}-paperback.pdf");
   my $num_pliegos = $num_pag_input >> 4;
-  # my ($rot_extra, @p) = $pagesPerSheet == 4 ? (0, @P_4UP_13PLUS) : (90, @P_2_UP_13PLUS);
+  # my ($rot_extra, @p) = $pagesPerSheet == 4 ? (0, @P_4UP_13PLUS) : (90, @P_2UP_13PLUS);
   my ($rot_extra, @p);
   if ($pagesPerSheet == 4) {
   	$rot_extra = 0;
@@ -146,7 +149,10 @@ END_MESSAGE
   	else                         { @p = @P_4UP_1PLUS;  }
   } else {
   	$rot_extra = 90;
-  	@p = @P_2_UP_13PLUS;
+       if ($num_pag_input >= 13) { @p = @P_2UP_13PLUS; } 
+  	elsif ($num_pag_input >= 9 ) { @p = @P_2UP_9PLUS;  } 
+  	elsif ($num_pag_input >= 5 ) { @p = @P_2UP_5PLUS;  } 
+  	else                         { @p = @P_2UP_1PLUS;  }
   }
   my ($rotation, $target_page);
   for (0..$num_pliegos) {
