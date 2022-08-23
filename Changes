@@ -1,6 +1,6 @@
 Revision history for Perl module and script App::paperback.
 
-0.43  Fri Aug 26 12:00:00 2022
+1.00  Wed Aug 24 12:00:00 2022
 	- Use fewer signatures if input PDF has fewer than 13 pages
 
 0.42  Mon Aug 22 12:00:00 2022
