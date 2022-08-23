@@ -95,8 +95,8 @@ ISO 216 normalised (international) page sizes:
 ANSI normalised (US) page sizes:
 
   Input page sizes Quarter Letter (4.25 x 5.5 in) and Half Letter (5.5
-  x 8,5 in) produce a Letter output page size (8.5 x 11 in). Input
-  page sizes Quarter Legal (4.25 x 7 in) and Half Legal (7 x 8,5 in)
+  x 8.5 in) produce a Letter output page size (8.5 x 11 in). Input
+  page sizes Quarter Legal (4.25 x 7 in) and Half Legal (7 x 8.5 in)
   produce a Legal output page size (8.5 x 14 in). Four Quarter-Letter
   pages will be put on each Letter page, two Half-Letter pages will be
   put on each Letter page, four Quarter-Legal pages will be put on each
