@@ -3,7 +3,7 @@ package App::paperback;
 use v5.10;
 use strict;
 # use warnings;
-our $VERSION = "v0.42";
+our $VERSION = "v0.43";
 
 use Exporter;
 our @ISA    = qw(Exporter);
@@ -40,7 +40,10 @@ my $IH =  $HW; # [I] US Legal Quarter (H)
 my $IW =  $FW; # [I] US Legal Quarter (W)
 
 # Page reordering and position offset schemas for "4 up":
-my @P_4_UP = (16,1,13,4,2,15,3,14,12,5,9,8,6,11,7,10);
+my @P_4UP_13PLUS = (16,1,13,4,2,15,3,14,12,5,9,8,6,11,7,10);
+my @P_4UP_9PLUS = (12,1,9,4,2,11,3,10,6,7,9999,9999,8,5);
+my @P_4UP_5PLUS = (8,1,5,4,2,7,3,6);
+my @P_4UP_1PLUS = (4,1,9999,9999,2,3);
 my @X_A6_ON_A4 = (0,$CW,$CW,$AW,0,$CW,$CW,$AW,0,$CW,$CW,$AW,0,$CW,$CW,$AW);
 my @Y_A6_ON_A4 = ($CG,$CG,$CH,$CH,$CG,$CG,$CH,$CH,$CG,$CG,$CH,$CH,$CG,$CG,$CH,$CH);
 my @X_QT_ON_LT = (0,$FW,$FW,$DW,0,$FW,$FW,$DW,0,$FW,$FW,$DW,0,$FW,$FW,$DW);
@@ -49,7 +52,7 @@ my @X_QG_ON_LG = (0,$IW,$IW,$GW,0,$IW,$IW,$GW,0,$IW,$IW,$GW,0,$IW,$IW,$GW);
 my @Y_QG_ON_LG = ($IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH);
 
 # Page reordering and position offset schemas for "2 up":
-my @P_2_UP = (16,1,15,2,14,3,13,4,12,5,11,6,10,7,9,8);
+my @P_2_UP_13PLUS = (16,1,15,2,14,3,13,4,12,5,11,6,10,7,9,8);
 my @X_A5_ON_A4 = ($BH,$BH,0,0,$BH,$BH,0,0,$BH,$BH,0,0,$BH,$BH,0,0);
 my @Y_A5_ON_A4 = ($BG,0,$AH,$BG,$BG,0,$AH,$BG,$BG,0,$AH,$BG,$BG,0,$AH,$BG);
 my @X_HT_ON_LT = ($EH,$EH,0,0,$EH,$EH,0,0,$EH,$EH,0,0,$EH,$EH,0,0);
@@ -133,7 +136,18 @@ END_MESSAGE
   my ($name) = $input =~ /(.+)\.[^.]+$/;
   openOutputFile("${name}-paperback.pdf");
   my $num_pliegos = $num_pag_input >> 4;
-  my ($rot_extra, @p) = $pagesPerSheet == 4 ? (0, @P_4_UP) : (90, @P_2_UP);
+  # my ($rot_extra, @p) = $pagesPerSheet == 4 ? (0, @P_4UP_13PLUS) : (90, @P_2_UP_13PLUS);
+  my ($rot_extra, @p);
+  if ($pagesPerSheet == 4) {
+  	$rot_extra = 0;
+  	   if ($num_pag_input >= 13) { @p = @P_4UP_13PLUS; } 
+  	elsif ($num_pag_input >= 9 ) { @p = @P_4UP_9PLUS;  } 
+  	elsif ($num_pag_input >= 5 ) { @p = @P_4UP_5PLUS;  } 
+  	else                         { @p = @P_4UP_1PLUS;  }
+  } else {
+  	$rot_extra = 90;
+  	@p = @P_2_UP_13PLUS;
+  }
   my ($rotation, $target_page);
   for (0..$num_pliegos) {
     for (0..15) {
