@@ -3,7 +3,7 @@ package App::paperback;
 use v5.10;
 use strict;
 # use warnings;
-our $VERSION = "v1.00";
+our $VERSION = "v1.01";
 
 use Exporter;
 our @ISA    = qw(Exporter);
@@ -139,7 +139,6 @@ END_MESSAGE
   my ($name) = $input =~ /(.+)\.[^.]+$/;
   openOutputFile("${name}-paperback.pdf");
   my $num_pliegos = $num_pag_input >> 4;
-  # my ($rot_extra, @p) = $pagesPerSheet == 4 ? (0, @P_4UP_13PLUS) : (90, @P_2UP_13PLUS);
   my ($rot_extra, @p);
   if ($pagesPerSheet == 4) {
   	$rot_extra = 0;
