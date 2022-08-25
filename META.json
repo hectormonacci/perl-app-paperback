@@ -1,64 +1,63 @@
 {
-   "abstract" : "A Perl module and standalone script for imposition of small pages on bigger paper.",
-   "author" : [
-      "Héctor M. Monacci <hector.monacci@gmail.com>"
-   ],
-   "dynamic_config" : 0,
-   "generated_by" : "hand",
-   "license" : [
-      "perl_5"
-   ],
-   "meta-spec" : {
-      "url" : "https://metacpan.org/pod/CPAN::Meta::Spec",
-      "version" : 2
-   },
-   "name" : "App-paperback",
-   "no_index" : {
-      "directory" : [
-         "t",
-         "xt",
-         "inc",
-         "share",
-         "eg",
-         "examples",
-         "author",
-         "builder"
-      ]
-   },
-   "prereqs" : {
-      "configure" : {
-         "requires" : {}
-      },
-      "develop" : {
-         "requires" : {}
-      },
-      "runtime" : {
-         "requires" : {
-            "perl" : "5.010000"
-         }
-      },
-      "test" : {
-         "requires" : {
-            "Test::More" : "0.98"
-         }
+  "abstract": "A Perl module and standalone script for imposition of small pages on bigger paper.",
+  "author": [
+    "Héctor M. Monacci <hector.monacci@gmail.com>"
+  ],
+  "dynamic_config": 0,
+  "generated_by": "hand",
+  "license": [
+    "perl_5"
+  ],
+  "meta-spec": {
+    "url": "https://metacpan.org/pod/CPAN::Meta::Spec",
+    "version": 2
+  },
+  "name": "App-paperback",
+  "no_index": {
+    "directory": [
+      "t",
+      "xt",
+      "inc",
+      "share",
+      "eg",
+      "examples",
+      "author",
+      "builder"
+    ]
+  },
+  "prereqs": {
+    "configure": {
+      "requires": {}
+    },
+    "develop": {
+      "requires": {}
+    },
+    "runtime": {
+      "requires": {
+        "perl": "5.010000"
       }
-   },
-  "resources" : {
-  	"license" : [ "perl_5" ],
-  	"homepage" : "https://github.com/hectormonacci/perl-app-paperback",
-  	"bugtracker" :  {
-    	"web" : "https://github.com/hectormonacci/perl-app-paperback/issues",
-  	},
-  	"repository" : {
-    	"url" : "git://github.com/hectormonacci/perl-app-paperback.git",
-    	"web" : "https://github.com/hectormonacci/perl-app-paperback",
-    	"type" : "git",
-  	},
-  	"x_twitter" : "http://twitter.com/hectormonacci/",
-		},
-   "release_status" : "stable",
-   "version" : "1.01",
-   "x_authority" : "cpan:MONACCI",
-   "x_serialization_backend" : "JSON::PP version 4.07",
-   "x_static_install" : 1
+    },
+    "test": {
+      "requires": {
+        "Test::More": "0.98"
+      }
+    }
+  },
+  "resources": {
+    "repository": {
+      "url": "git://github.com/hectormonacci/perl-app-paperback.git",
+      "web": "https://github.com/hectormonacci/perl-app-paperback",
+      "type": "git"
+    }
+  },
+  "release_status": "stable",
+  "version": "1.01",
+  "x_authority": "cpan:MONACCI",
+  "x_serialization_backend": "JSON::PP version 4.07",
+  "x_static_install": 1,
+  "x_twitter": "https://twitter.com/hectormonacci/",
+  "homepage": "https://github.com/hectormonacci/perl-app-paperback",
+  "bugtracker": {
+    "web": "https://github.com/hectormonacci/perl-app-paperback/issues"
+  }
 }
