@@ -3,7 +3,7 @@ package App::paperback;
 use v5.10;
 use strict;
 # use warnings;
-our $VERSION = "v1.01";
+our $VERSION = "v1.02";
 
 use Exporter;
 our @ISA    = qw(Exporter);
@@ -125,22 +125,21 @@ END_MESSAGE
   die "[!] File '$input' is not a valid v1.4 PDF file.\n"
     if $num_pag_input == 0;
 
-  my ($pagesPerSheet, @x, @y);
+  my ($pgPerOutputPage, @x, @y);
   for ($pgSizeInput) {
-       if ($_ eq "A6") { $pagesPerSheet = 4; @x = @X_A6_ON_A4; @y = @Y_A6_ON_A4; }
-    elsif ($_ eq "A5") { $pagesPerSheet = 2; @x = @X_A5_ON_A4; @y = @Y_A5_ON_A4; }
-    elsif ($_ eq "QT") { $pagesPerSheet = 4; @x = @X_QT_ON_LT; @y = @Y_QT_ON_LT; }
-    elsif ($_ eq "QG") { $pagesPerSheet = 4; @x = @X_QG_ON_LG; @y = @Y_QG_ON_LG; }
-    elsif ($_ eq "HT") { $pagesPerSheet = 2; @x = @X_HT_ON_LT; @y = @Y_HT_ON_LT; }
-    elsif ($_ eq "HG") { $pagesPerSheet = 2; @x = @X_HG_ON_LG; @y = @Y_HG_ON_LG; }
+       if ($_ eq "A6") { $pgPerOutputPage = 4; @x = @X_A6_ON_A4; @y = @Y_A6_ON_A4; }
+    elsif ($_ eq "A5") { $pgPerOutputPage = 2; @x = @X_A5_ON_A4; @y = @Y_A5_ON_A4; }
+    elsif ($_ eq "QT") { $pgPerOutputPage = 4; @x = @X_QT_ON_LT; @y = @Y_QT_ON_LT; }
+    elsif ($_ eq "QG") { $pgPerOutputPage = 4; @x = @X_QG_ON_LG; @y = @Y_QG_ON_LG; }
+    elsif ($_ eq "HT") { $pgPerOutputPage = 2; @x = @X_HT_ON_LT; @y = @Y_HT_ON_LT; }
+    elsif ($_ eq "HG") { $pgPerOutputPage = 2; @x = @X_HG_ON_LG; @y = @Y_HG_ON_LG; }
     else {die "[!] Bad page size ($pgSizeInput). See 'paperback -h' to learn more.\n"}
   }
 
   my ($name) = $input =~ /(.+)\.[^.]+$/;
   openOutputFile("${name}-paperback.pdf");
-  my $num_pliegos = $num_pag_input >> 4;
   my ($rot_extra, @p);
-  if ($pagesPerSheet == 4) {
+  if ($pgPerOutputPage == 4) {
   	$rot_extra = 0;
   	   if ($num_pag_input >= 13) { @p = @P_4UP_13PLUS; } 
   	elsif ($num_pag_input >= 9 ) { @p = @P_4UP_9PLUS;  } 
@@ -153,10 +152,11 @@ END_MESSAGE
   	elsif ($num_pag_input >= 5 ) { @p = @P_2UP_5PLUS;  } 
   	else                         { @p = @P_2UP_1PLUS;  }
   }
+  my $num_pliegos = $num_pag_input >> 4;
   my ($rotation, $target_page);
   for (0..$num_pliegos) {
     for (0..15) {
-      newPageInOutputFile() if $_ % $pagesPerSheet == 0;
+      newPageInOutputFile() if $_ % $pgPerOutputPage == 0;
       $target_page = $p[$_] + ($numPagImposed >> 4) * 16;
       next if $target_page > $num_pag_input;
 
