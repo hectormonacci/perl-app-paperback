@@ -152,12 +152,12 @@ END_MESSAGE
   	elsif ($num_pag_input >= 5 ) { @p = @P_2UP_5PLUS;  } 
   	else                         { @p = @P_2UP_1PLUS;  }
   }
-  my $num_pliegos = $num_pag_input >> 4;
+  my $lastSignature = $num_pag_input >> 4;
   my ($rotation, $target_page);
-  for (0..$num_pliegos) {
+  for (my $thisSignature = 0; $thisSignature <= $lastSignature; ++$thisSignature) {
     for (0..15) {
       newPageInOutputFile() if $_ % $pgPerOutputPage == 0;
-      $target_page = $p[$_] + ($numPagImposed >> 4) * 16;
+      $target_page = $p[$_] + 16 * $thisSignature;
       next if $target_page > $num_pag_input;
 
       $rotation = $_ % 4 > 1 ? $rot_extra + 180 : $rot_extra;
@@ -491,7 +491,7 @@ sub getObject {
 sub writeToBeCreated {
 ##########################################################
   my $elObje = $_[0];
-  my ( $out_line, $part, $strPos);
+  my ($out_line, $part, $strPos);
 
   for (@Gto_be_created) {
     my $old_one = $_->[0];
@@ -534,33 +534,27 @@ sub getInputPageDimensions {
     . int($GformBox[3] / 72 * 25.4) . " mm";
 
   if ($multi > 119_780 and $multi < 121_780) { # US 1/4 letter: 120780
-    $GoWid  = $DW;
-    $GoHei = $DH;
+    $GoWid = $DW; $GoHei = $DH;
     return "QT";
   }
   if ($multi > 123_443 and $multi < 125_443) { # ISO A6: 124443
-    $GoWid  = $AW;
-    $GoHei = $AH;
+    $GoWid = $AW; $GoHei = $AH;
     return "A6";
   }
   if ($multi > 152_720 and $multi < 154_720) { # US 1/4 legal: 153720
-    $GoWid  = $GW;
-    $GoHei = $GH;
+    $GoWid = $GW; $GoHei = $GH;
     return "QG";
   }
   if ($multi > 241_352 and $multi < 243_352) { # US 1/2 Letter ("statement"): 242352
-    $GoWid  = $DW;
-    $GoHei = $DH;
+    $GoWid = $DW; $GoHei = $DH;
     return "HT";
   } 
   if ($multi > 248_305 and $multi < 250_305) { # ISO A5: 249305
-    $GoWid  = $AW;
-    $GoHei = $AH;
+    $GoWid = $AW; $GoHei = $AH;
     return "A5";
   }
   if ($multi > 307_448 and $multi < 309_448) { # US 1/2 legal: 308448
-    $GoWid  = $GW;
-    $GoHei = $GH;
+    $GoWid = $GW; $GoHei = $GH;
     return "HG";
   }
   if ($multi > 483_704 and $multi < 485_704) { # US letter: 484704
