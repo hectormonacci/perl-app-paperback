@@ -3,7 +3,7 @@ package App::paperback;
 use v5.10;
 use strict;
 # use warnings;
-our $VERSION = "v1.02";
+our $VERSION = "v1.03";
 
 use Exporter;
 our @ISA    = qw(Exporter);
