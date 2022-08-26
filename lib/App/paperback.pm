@@ -110,6 +110,8 @@ ANSI normalised (US) page sizes:
   Before that, input pages will be reordered and reoriented so as to 
   produce a final PDF fit for duplex 'long-edge-flip' printing.
 
+For further details, please try 'perldoc paperback'.
+
 ${sayVersion}
 END_MESSAGE
 
@@ -119,7 +121,7 @@ END_MESSAGE
     if $input =~ "^-h\$" or $input =~ "^--help\$";
   do {print STDERR "${sayVersion}\n" and exit}
     if $input =~ "^-v\$" or $input =~ "^--version\$";
-  die "[!] File '$input' can't be found or read.\n"
+  die "[!] File '$input' can't be found or sysread.\n"
     unless -r $input;
   ($num_pag_input, $pgSizeInput) = openInputFile($input);
   die "[!] File '$input' is not a valid v1.4 PDF file.\n"
@@ -483,6 +485,7 @@ sub getObject {
 
   sysseek $IN_FILE, $offs, 0;
   sysread $IN_FILE, $buf, $size;
+
   return $buf;
 }
 
