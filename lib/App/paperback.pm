@@ -208,8 +208,8 @@ sub copyPageFromInputToOutput {
     if !defined $refNr;
   die "[!] Page ${pagenumber} doesn't exist in file ${GinFile}" if !$refNr;
 
-  $Gstream .= ( defined $x and defined $y and defined $rotate ) ?
-    "q\n" . calcMatrix($x, $y, $rotate) ."\n/Gs0 gs\n/${name} Do\nQ\n" :
+  $Gstream .= defined $rotate ?
+    "q\n" . calcRotateMatrix($x, $y, $rotate) ."\n/Gs0 gs\n/${name} Do\nQ\n" :
     "\n/Gs0 gs\n/${name} Do\n";
 
   $GpageXObject{$name} = $refNr;
@@ -408,7 +408,7 @@ sub writeEndNode {
 
 
 ##########################################################
-sub calcMatrix {
+sub calcRotateMatrix {
 ##########################################################
   my $x = $_[0]; my $y = $_[1]; my $rotate = $_[2];
   my $str = "1 0 0 1 ${x} ${y} cm\n";
