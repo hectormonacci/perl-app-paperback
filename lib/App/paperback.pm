@@ -3,7 +3,7 @@ package App::paperback;
 use v5.10;
 use strict;
 # use warnings;
-our $VERSION = "v1.04";
+our $VERSION = "v1.05";
 
 my ($GinFile, $GpageObjNr, $Groot, $Gpos, $GobjNr, $Gstream, $GoWid, $GoHei);
 my (@Gkids, @Gcounts, @GformBox, @Gobject, @Gparents, @Gto_be_created);
@@ -208,10 +208,7 @@ sub copyPageFromInputToOutput {
     if !defined $refNr;
   die "[!] Page ${pagenumber} doesn't exist in file ${GinFile}" if !$refNr;
 
-  $Gstream .= defined $rotate ?
-    "q\n" . calcRotateMatrix($x, $y, $rotate) ."\n/Gs0 gs\n/${name} Do\nQ\n" :
-    "\n/Gs0 gs\n/${name} Do\n";
-
+	$Gstream .= "q\n" . calcRotateMatrix($x, $y, $rotate) ."\n/Gs0 gs\n/${name} Do\nQ\n";
   $GpageXObject{$name} = $refNr;
 
   return;
