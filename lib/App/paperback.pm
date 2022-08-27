@@ -3,14 +3,9 @@ package App::paperback;
 use v5.10;
 use strict;
 # use warnings;
-our $VERSION = "v1.03";
+our $VERSION = "v1.03.01";
 
-use Exporter;
-our @ISA    = qw(Exporter);
-our @EXPORT = qw(openInputFile openOutputFile newPageInOutputFile
-	copyPageFromInputToOutput closeInputFile closeOutputFile);
-
-my ($GformNr, $GinFile, $GpageObjNr, $Groot, $Gpos, $GobjNr, $Gstream, $GoWid, $GoHei);
+my ($GinFile, $GpageObjNr, $Groot, $Gpos, $GobjNr, $Gstream, $GoWid, $GoHei);
 my (@Gkids, @Gcounts, @GformBox, @Gobject, @Gparents, @Gto_be_created);
 my (%Gold, %Gresources, %GpageXObject, %GoldObject);
 
@@ -200,8 +195,10 @@ sub copyPageFromInputToOutput {
   my $y          = $param->{'y'}      or 0;
   my $rotate     = $param->{'rotate'} or 0;
 
-  ++$GformNr;
-  my $name = "Fm${GformNr}";
+  state $formNr; # Este uso de "state" requiere v5.10 (que salió en 2007)
+  ++$formNr;
+
+  my $name = "Fm${formNr}";
   my $refNr = getPage( $pagenumber );
   die "[!] Page ${pagenumber} in ${GinFile} can't be used. Concatenate streams!" 
   	if !defined $refNr;
