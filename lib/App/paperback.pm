@@ -3,7 +3,7 @@ package App::paperback;
 use v5.10;
 use strict;
 # use warnings;
-our $VERSION = "v1.05";
+our $VERSION = "1.06";
 
 my ($GinFile, $GpageObjNr, $Groot, $Gpos, $GobjNr, $Gstream, $GoWid, $GoHei);
 my (@Gkids, @Gcounts, @GformBox, @Gobject, @Gparents, @Gto_be_created);
@@ -148,9 +148,9 @@ END_MESSAGE
     $rot_extra = 90;
     for ($num_pag_input) {
       if    ($_ >= 13) { @p = @P_2UP_13PLUS; } 
-    	elsif ($_ >= 9 ) { @p = @P_2UP_9PLUS;  } 
-  	  elsif ($_ >= 5 ) { @p = @P_2UP_5PLUS;  } 
-	    else             { @p = @P_2UP_1PLUS;  }
+      elsif ($_ >= 9 ) { @p = @P_2UP_9PLUS;  } 
+      elsif ($_ >= 5 ) { @p = @P_2UP_5PLUS;  } 
+      else             { @p = @P_2UP_1PLUS;  }
     }
   }
   my $lastSignature = $num_pag_input >> 4;
@@ -208,7 +208,7 @@ sub copyPageFromInputToOutput {
     if !defined $refNr;
   die "[!] Page ${pagenumber} doesn't exist in file ${GinFile}" if !$refNr;
 
-	$Gstream .= "q\n" . calcRotateMatrix($x, $y, $rotate) ."\n/Gs0 gs\n/${name} Do\nQ\n";
+  $Gstream .= "q\n" . calcRotateMatrix($x, $y, $rotate) ."\n/Gs0 gs\n/${name} Do\nQ\n";
   $GpageXObject{$name} = $refNr;
 
   return;
@@ -536,38 +536,25 @@ sub getInputPageDimensions {
   my $measuresInMm = int($GformBox[2] / 72 * 25.4) . " x "
     . int($GformBox[3] / 72 * 25.4) . " mm";
 
-  if ($multi > 119_780 and $multi < 121_780) { # US 1/4 letter: 120780
-    $GoWid = $DW; $GoHei = $DH;
-    return "QT";
-  }
-  if ($multi > 123_443 and $multi < 125_443) { # ISO A6: 124443
-    $GoWid = $AW; $GoHei = $AH;
-    return "A6";
-  }
-  if ($multi > 152_720 and $multi < 154_720) { # US 1/4 legal: 153720
-    $GoWid = $GW; $GoHei = $GH;
-    return "QG";
-  }
-  if ($multi > 241_352 and $multi < 243_352) { # US 1/2 Letter ("statement"): 242352
-    $GoWid = $DW; $GoHei = $DH;
-    return "HT";
-  } 
-  if ($multi > 248_305 and $multi < 250_305) { # ISO A5: 249305
-    $GoWid = $AW; $GoHei = $AH;
-    return "A5";
-  }
-  if ($multi > 307_448 and $multi < 309_448) { # US 1/2 legal: 308448
-    $GoWid = $GW; $GoHei = $GH;
-    return "HG";
-  }
-  if ($multi > 483_704 and $multi < 485_704) { # US letter: 484704
-    return "USletter, ${measuresInMm}";
-  }
-  if ($multi > 499_395 and $multi < 501_395) { # ISO A4: 500395
-    return "A4, ${measuresInMm}";
-  }
-  if ($multi > 615_896 and $multi < 617_896) { # US legal: 616896
-    return "USlegal, ${measuresInMm}";
+  for ($multi) {
+  	# US 1/4 letter: 120780
+	  if ($_ > 119_780 and $_ < 121_780) {$GoWid = $DW; $GoHei = $DH; return "QT";}
+		# ISO A6: 124443
+	  if ($_ > 123_443 and $_ < 125_443) {$GoWid = $AW; $GoHei = $AH; return "A6";}
+	  # US 1/4 legal: 153720
+	  if ($_ > 152_720 and $_ < 154_720) {$GoWid = $GW; $GoHei = $GH; return "QG";}
+	  # US 1/2 Letter ("statement"): 242352
+	  if ($_ > 241_352 and $_ < 243_352) {$GoWid = $DW; $GoHei = $DH; return "HT";}
+	  # ISO A5: 249305
+	  if ($_ > 248_305 and $_ < 250_305) {$GoWid = $AW; $GoHei = $AH; return "A5";}
+	  # US 1/2 legal: 308448
+	  if ($_ > 307_448 and $_ < 309_448) {$GoWid = $GW; $GoHei = $GH; return "HG";}
+	  # US letter: 484704
+	  if ($_ > 483_704 and $_ < 485_704) {return "USletter, ${measuresInMm}"; } 
+	  # ISO A4: 500395
+	  if ($_ > 499_395 and $_ < 501_395) {return "A4, ${measuresInMm}"; }
+	  # US legal: 616896
+	  if ($_ > 615_896 and $_ < 617_896) {return "USlegal, ${measuresInMm}";}
   }
   return "unknown, ${measuresInMm}";
 }
