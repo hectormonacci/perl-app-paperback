@@ -7,7 +7,7 @@ our $VERSION = "v1.04";
 
 my ($GinFile, $GpageObjNr, $Groot, $Gpos, $GobjNr, $Gstream, $GoWid, $GoHei);
 my (@Gkids, @Gcounts, @GformBox, @Gobject, @Gparents, @Gto_be_created);
-my (%Gold, %Gresources, %GpageXObject, %GoldObject);
+my (%Gold, %GpageXObject, %GoldObject);
 
 # ISO 216 paper sizes in pt:
 my $AH = 841.8898; # [A] A4 ~ 297 mm (H)
@@ -251,11 +251,13 @@ sub writePageResourceDict {
   my $resourceDict = $_[0];
   my $resourceObject;
 
+  state %resources;
+
   # Found one identical, use it:
-  return $Gresources{$resourceDict} if exists $Gresources{$resourceDict};
+  return $resources{$resourceDict} if exists $resources{$resourceDict};
   ++$GobjNr;
   # Save first 10 resources:
-  $Gresources{$resourceDict} = $GobjNr if keys(%Gresources) < 10;
+  $resources{$resourceDict} = $GobjNr if keys(%resources) < 10;
   $resourceObject = $GobjNr;
   $Gobject[$GobjNr] = $Gpos;
   $resourceDict = "${GobjNr} 0 obj<<${resourceDict}>>endobj\n";
