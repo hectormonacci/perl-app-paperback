@@ -3,7 +3,7 @@ package App::paperback;
 use v5.10;
 use strict;
 # use warnings;
-our $VERSION = "v1.03.01";
+our $VERSION = "v1.04.01";
 
 my ($GinFile, $GpageObjNr, $Groot, $Gpos, $GobjNr, $Gstream, $GoWid, $GoHei);
 my (@Gkids, @Gcounts, @GformBox, @Gobject, @Gparents, @Gto_be_created);
