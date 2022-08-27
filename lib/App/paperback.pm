@@ -124,30 +124,34 @@ END_MESSAGE
 
   my ($pgPerOutputPage, @x, @y);
   for ($pgSizeInput) {
-       if ($_ eq "A6") { $pgPerOutputPage = 4; @x = @X_A6_ON_A4; @y = @Y_A6_ON_A4; }
+    if    ($_ eq "A6") { $pgPerOutputPage = 4; @x = @X_A6_ON_A4; @y = @Y_A6_ON_A4; }
     elsif ($_ eq "A5") { $pgPerOutputPage = 2; @x = @X_A5_ON_A4; @y = @Y_A5_ON_A4; }
     elsif ($_ eq "QT") { $pgPerOutputPage = 4; @x = @X_QT_ON_LT; @y = @Y_QT_ON_LT; }
     elsif ($_ eq "QG") { $pgPerOutputPage = 4; @x = @X_QG_ON_LG; @y = @Y_QG_ON_LG; }
     elsif ($_ eq "HT") { $pgPerOutputPage = 2; @x = @X_HT_ON_LT; @y = @Y_HT_ON_LT; }
     elsif ($_ eq "HG") { $pgPerOutputPage = 2; @x = @X_HG_ON_LG; @y = @Y_HG_ON_LG; }
-    else {die "[!] Bad page size ($pgSizeInput). See 'paperback -h' to learn more.\n"}
+    else {die "[!] Bad page size (${pgSizeInput}). See 'paperback -h' to learn more.\n"}
   }
 
   my ($name) = $input =~ /(.+)\.[^.]+$/;
   openOutputFile("${name}-paperback.pdf");
   my ($rot_extra, @p);
   if ($pgPerOutputPage == 4) {
-  	$rot_extra = 0;
-  	   if ($num_pag_input >= 13) { @p = @P_4UP_13PLUS; } 
-  	elsif ($num_pag_input >= 9 ) { @p = @P_4UP_9PLUS;  } 
-  	elsif ($num_pag_input >= 5 ) { @p = @P_4UP_5PLUS;  } 
-  	else                         { @p = @P_4UP_1PLUS;  }
+    $rot_extra = 0;
+    for ($num_pag_input) {
+      if    ($_ >= 13) { @p = @P_4UP_13PLUS; }
+      elsif ($_ >= 9 ) { @p = @P_4UP_9PLUS;  } 
+      elsif ($_ >= 5 ) { @p = @P_4UP_5PLUS;  } 
+      else             { @p = @P_4UP_1PLUS;  }
+    }
   } else {
-  	$rot_extra = 90;
-       if ($num_pag_input >= 13) { @p = @P_2UP_13PLUS; } 
-  	elsif ($num_pag_input >= 9 ) { @p = @P_2UP_9PLUS;  } 
-  	elsif ($num_pag_input >= 5 ) { @p = @P_2UP_5PLUS;  } 
-  	else                         { @p = @P_2UP_1PLUS;  }
+    $rot_extra = 90;
+    for ($num_pag_input) {
+      if    ($_ >= 13) { @p = @P_2UP_13PLUS; } 
+    	elsif ($_ >= 9 ) { @p = @P_2UP_9PLUS;  } 
+  	  elsif ($_ >= 5 ) { @p = @P_2UP_5PLUS;  } 
+	    else             { @p = @P_2UP_1PLUS;  }
+    }
   }
   my $lastSignature = $num_pag_input >> 4;
   my ($rotation, $target_page);
@@ -201,7 +205,7 @@ sub copyPageFromInputToOutput {
   my $name = "Fm${formNr}";
   my $refNr = getPage( $pagenumber );
   die "[!] Page ${pagenumber} in ${GinFile} can't be used. Concatenate streams!" 
-  	if !defined $refNr;
+    if !defined $refNr;
   die "[!] Page ${pagenumber} doesn't exist in file ${GinFile}" if !$refNr;
 
   $Gstream .= ( defined $x and defined $y and defined $rotate ) ?
@@ -254,7 +258,7 @@ sub writePageResourceDict {
   $Gresources{$resourceDict} = $GobjNr if keys(%Gresources) < 10;
   $resourceObject = $GobjNr;
   $Gobject[$GobjNr] = $Gpos;
-  $resourceDict   = "${GobjNr} 0 obj<<${resourceDict}>>endobj\n";
+  $resourceDict = "${GobjNr} 0 obj<<${resourceDict}>>endobj\n";
   $Gpos += syswrite $OUT_FILE, $resourceDict;
   return $resourceObject;
 }
@@ -332,8 +336,8 @@ sub closeOutputFile {
 sub writePageNodes {
 ##########################################################
   my $qtyChildren = $_[0];
-  my $i     = 0;
-  my $j     = 1;
+  my $i = 0;
+  my $j = 1;
   my $nodeObj;
 
   while ( $qtyChildren < $#{ $Gkids[$i] } ) {
@@ -574,10 +578,9 @@ sub getInputPageDimensions {
 sub getPage {
 ##########################################################
   my $pagenumber = $_[0];
-
   my ( $reference, $formRes, $formCont );
 
-    # Find root:
+  # Find root:
   my $elObje = getObject($Groot);
 
   # Find pages:
