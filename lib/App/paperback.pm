@@ -3,7 +3,7 @@ package App::paperback;
 use v5.10;
 use strict;
 # use warnings;
-our $VERSION = "1.07";
+our $VERSION = "1.08";
 
 my ($GinFile, $GpageObjNr, $Groot, $Gpos, $GobjNr, $Gstream, $GoWid, $GoHei);
 my (@Gkids, @Gcounts, @GformBox, @Gobject, @Gparents, @Gto_be_created);
@@ -116,7 +116,7 @@ END_MESSAGE
     if $input =~ "^-h\$" or $input =~ "^--help\$";
   do {print STDERR "${sayVersion}\n" and exit}
     if $input =~ "^-v\$" or $input =~ "^--version\$";
-  die "[!] File '${input}' can't be found or sysread.\n"
+  die "[!] File '${input}' can't be found or read.\n"
     unless -r $input;
   ($num_pag_input, $pgSizeInput) = openInputFile($input);
   die "[!] File '${input}' is not a valid v1.4 PDF file.\n"
