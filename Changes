@@ -1,5 +1,8 @@
 Revision history for Perl module and script App::paperback.
 
+1.07  Sun Aug 27 09:00:00 2022
+	- Check all m'' and s'' options, fix example for App::paperback (library use)
+
 1.06  Sat Aug 27 23:00:00 2022
 	- Syntax revision
 

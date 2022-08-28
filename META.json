@@ -43,7 +43,17 @@
       }
     }
   },
+  "provides" : {
+    "App::paperback" : {
+      "file" : "lib/App/paperback.pm",
+      "version" : "1.07"
+    }
+  },
   "resources": {
+  	"bugtracker": {
+      "web": "https://github.com/hectormonacci/perl-app-paperback/issues"
+    },
+    "homepage" : "https://github.com/hectormonacci/perl-app-paperback",
     "repository": {
       "url": "git://github.com/hectormonacci/perl-app-paperback.git",
       "web": "https://github.com/hectormonacci/perl-app-paperback",
@@ -51,13 +61,9 @@
     }
   },
   "release_status": "stable",
-  "version": "1.06",
+  "version": "1.07",
   "x_authority": "cpan:MONACCI",
   "x_serialization_backend": "JSON::PP version 4.07",
-  "x_static_install": 1,
-  "x_twitter": "https://twitter.com/hectormonacci/",
-  "homepage": "https://github.com/hectormonacci/perl-app-paperback",
-  "bugtracker": {
-    "web": "https://github.com/hectormonacci/perl-app-paperback/issues"
-  }
+  "x_static_install": 0,
+  "x_twitter": "https://twitter.com/hectormonacci/"
 }

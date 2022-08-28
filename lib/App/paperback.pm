@@ -3,7 +3,7 @@ package App::paperback;
 use v5.10;
 use strict;
 # use warnings;
-our $VERSION = "1.06";
+our $VERSION = "1.07";
 
 my ($GinFile, $GpageObjNr, $Groot, $Gpos, $GobjNr, $Gstream, $GoWid, $GoHei);
 my (@Gkids, @Gcounts, @GformBox, @Gobject, @Gparents, @Gto_be_created);
@@ -68,7 +68,7 @@ sub main {
   my $num_pag_input; my $pgSizeInput;
   my $numPagImposed = 0;
   my $sayUsage = "Usage: paperback file.pdf (will produce 'file-paperback.pdf').";
-  my $sayVersion = "This is paperback ${VERSION}, (c) 2022 Hector M. Monacci.";
+  my $sayVersion = "This is paperback v${VERSION}, (c) 2022 Hector M. Monacci.";
   my $sayHelp = <<"END_MESSAGE";
 
 ${sayUsage}
@@ -110,16 +110,16 @@ For further details, please try 'perldoc paperback'.
 ${sayVersion}
 END_MESSAGE
 
-  die "[!] $sayUsage\n"
+  die "[!] ${sayUsage}\n"
     if ! defined $input;
-  do {print STDERR "$sayHelp" and exit}
+  do {print STDERR "${sayHelp}" and exit}
     if $input =~ "^-h\$" or $input =~ "^--help\$";
   do {print STDERR "${sayVersion}\n" and exit}
     if $input =~ "^-v\$" or $input =~ "^--version\$";
-  die "[!] File '$input' can't be found or sysread.\n"
+  die "[!] File '${input}' can't be found or sysread.\n"
     unless -r $input;
   ($num_pag_input, $pgSizeInput) = openInputFile($input);
-  die "[!] File '$input' is not a valid v1.4 PDF file.\n"
+  die "[!] File '${input}' is not a valid v1.4 PDF file.\n"
     if $num_pag_input == 0;
 
   my ($pgPerOutputPage, @x, @y);
@@ -466,7 +466,7 @@ sub getRootFromXrefSection {
 
   while ($incoming_line) {
     $buf .= $incoming_line;
-    $rooty = $1 if $buf =~ m'\/Root\s+(\d+)\s{1,2}\d+\s{1,2}R'so;
+    $rooty = $1 if $buf =~ m'\/Root\s+(\d+)\s{1,2}\d+\s{1,2}R's;
     last if $rooty;
     sysread $IN_FILE, $incoming_line, 30;
   }
@@ -500,14 +500,14 @@ sub writeToBeCreated {
     my $old_one = $_->[0];
     my $new_one = $_->[1];
     $elObje = getObject($old_one);
-    if ( $elObje =~ m'^(\d+ \d+ obj\s*<<)(.+)(>>\s*stream)'os ) {
+    if ( $elObje =~ m'^(\d+ \d+ obj\s*<<)(.+)(>>\s*stream)'s ) {
       $part = $2;
       $strPos = length($1) + length($2) + length($3);
       renew_ddR_and_populate_to_be_created($part);
       $out_line = "${new_one} 0 obj\n<<${part}>>stream";
       $out_line .= substr( $elObje, $strPos );
     } else {
-      $elObje = substr( $elObje, length($1) ) if $elObje =~ m'^(\d+ \d+ obj\s*)'os;
+      $elObje = substr( $elObje, length($1) ) if $elObje =~ m'^(\d+ \d+ obj\s*)'s;
       renew_ddR_and_populate_to_be_created($elObje);
       $out_line = "${new_one} 0 obj ${elObje}";
     }
@@ -526,7 +526,7 @@ sub getInputPageDimensions {
   my $elObje = getObject($Groot);
 
   # Find pages:
-  return "unknown" unless $elObje =~ m'/Pages\s+(\d+)\s{1,2}\d+\s{1,2}R'os;
+  return "unknown" unless $elObje =~ m'/Pages\s+(\d+)\s{1,2}\d+\s{1,2}R's;
   $elObje = getObject($1);
 
   $elObje = xformObjForThisPage($elObje, 1);
@@ -571,7 +571,7 @@ sub getPage {
 
   # Find pages:
   die "[!] Didn't find Pages section in '${GinFile}' - aborting" 
-    unless $elObje =~ m'/Pages\s+(\d+)\s{1,2}\d+\s{1,2}R'os;
+    unless $elObje =~ m'/Pages\s+(\d+)\s{1,2}\d+\s{1,2}R's;
   $elObje = getObject($1);
 
   $elObje = xformObjForThisPage($elObje, $pagenumber);
@@ -592,7 +592,7 @@ sub writeRes {
   my $out_line;
 
   $elObje = getObject($formCont);
-  $elObje =~ m'^(\d+ \d+ obj\s*<<)(.+)(>>\s*stream)'so;
+  $elObje =~ m'^(\d+ \d+ obj\s*<<)(.+)(>>\s*stream)'s;
   my $strPos = length($1) + length($2) + length($3);
   my $newPart = "<</Type/XObject/Subtype/Form/FormType 1/Resources ${formRes}"
     . "/BBox \[ $GformBox[0] $GformBox[1] $GformBox[2] $GformBox[3]\] ${2}";
@@ -613,23 +613,23 @@ sub xformObjForThisPage {
   my $elObje = $_[0]; my $pagenumber = $_[1];
   my ( $vector, @pageObj, @pageObjBackup, $pageAccumulator);
 
-  return 0 unless $elObje =~ m'/Kids\s*\[([^\]]+)'os;
+  return 0 unless $elObje =~ m'/Kids\s*\[([^\]]+)'s;
   $vector = $1;
 
   $pageAccumulator = 0;
 
-  push @pageObj, $1 while $vector =~ m'(\d+)\s{1,2}\d+\s{1,2}R'go;
+  push @pageObj, $1 while $vector =~ m'(\d+)\s{1,2}\d+\s{1,2}R'gs;
   while ( $pageAccumulator < $pagenumber ) {
     @pageObjBackup = @pageObj;
     undef @pageObj;
     for (@pageObjBackup) {
       $elObje = getObject($_);
-      if ( $elObje =~ m'/Count\s+(\d+)'os ) {
+      if ( $elObje =~ m'/Count\s+(\d+)'s ) {
         if ( ( $pageAccumulator + $1 ) < $pagenumber ) {
           $pageAccumulator += $1;
         } else {
-          $vector = $1 if $elObje =~ m'/Kids\s*\[([^\]]+)'os ;
-          push @pageObj, $1 while $vector =~ m'(\d+)\s{1,2}\d+\s{1,2}R'gso;
+          $vector = $1 if $elObje =~ m'/Kids\s*\[([^\]]+)'s ;
+          push @pageObj, $1 while $vector =~ m'(\d+)\s{1,2}\d+\s{1,2}R'gs;
           last;
         }
       } else {
@@ -650,14 +650,14 @@ sub getResources {
 
   # Assume all input PDF pages have the same dimensions as first MediaBox found:
   if (! @GformBox) {
-    if ( $obj =~ m'MediaBox\s*\[\s*([\S]+)\s+([\S]+)\s+([\S]+)\s+([\S]+)\s*\]'os ) {
+    if ( $obj =~ m'MediaBox\s*\[\s*([\S]+)\s+([\S]+)\s+([\S]+)\s+([\S]+)\s*\]'s ) {
       @GformBox = ($1, $2, $3, $4);
     }
   }
 
-  if ( $obj =~ m'/Contents\s+(\d+)'so ) {
+  if ( $obj =~ m'/Contents\s+(\d+)'s ) {
     $formCont = $1;
-  } elsif ( $obj =~ m'/Contents\s*\[\s*(\d+)\s{1,2}\d+\s{1,2}R\s*\]'so ) {
+  } elsif ( $obj =~ m'/Contents\s*\[\s*(\d+)\s{1,2}\d+\s{1,2}R\s*\]'s ) {
     $formCont = $1;
   }
 
@@ -673,8 +673,8 @@ sub getResourcesFromObj {
   my $obj = $_[0];
   my $resources;
 
-  if ( $obj =~ m'^(.+/Resources)'so ) {
-    return $1 if $obj =~ m'Resources(\s+\d+\s{1,2}\d+\s{1,2}R)'os; # Reference (95%)
+  if ( $obj =~ m'^(.+/Resources)'s ) {
+    return $1 if $obj =~ m'Resources(\s+\d+\s{1,2}\d+\s{1,2}R)'s; # Reference (95%)
     # The resources are a dictionary. The whole is copied (morfologia.pdf):
     my $k;
     ( undef, $obj ) = split /\/Resources/, $obj;
@@ -711,9 +711,9 @@ sub openInputFile {
 
   # Find pages
   return 0 unless eval { $elObje = getObject($Groot); 1; };
-  if ( $elObje =~ m'/Pages\s+(\d+)\s{1,2}\d+\s{1,2}R'os ) {
+  if ( $elObje =~ m'/Pages\s+(\d+)\s{1,2}\d+\s{1,2}R's ) {
     $elObje = getObject($1);
-    return ($1, $inputPageSize) if $elObje =~ m'/Count\s+(\d+)'os;
+    return ($1, $inputPageSize) if $elObje =~ m'/Count\s+(\d+)'s;
   }
   return 0;
 }
@@ -747,7 +747,7 @@ sub renew_ddR_and_populate_to_be_created {
     push @Gto_be_created, [ $1, ++$GobjNr ];
     return $Gold{$1} = $GobjNr;
   };
-  $_[0] =~ s/\b(\d+)\s{1,2}\d+\s{1,2}R\b/&$xform . ' 0 R'/oegs;
+  $_[0] =~ s/\b(\d+)\s{1,2}\d+\s{1,2}R\b/&$xform . ' 0 R'/eg;
   return;
 }
 
@@ -816,18 +816,19 @@ App::paperback - Copy and transform pages from a PDF into a new PDF
  my $desiredPage            = 1;
  my $newPositionXinPoints   = 100;
  my $newPositionYinPoints   = 150;
- my $rotate                 = 90;
- my ($numPages, $paperSize) = openInputFile($inputFile);
- openOutputFile($outputFile);
- newPageInOutputFile();
- copyPageFromInputToOutput( {
+ my $rotate                 = 45;
+ my ($numPages, $paperSize) = 
+   App::paperback::openInputFile($inputFile);
+ App::paperback::openOutputFile($outputFile);
+ App::paperback::newPageInOutputFile();
+ App::paperback::copyPageFromInputToOutput( {
      page   => $desiredPage,
      rotate => $rotate,
      x      => $newPositionXinPoints,
      y      => $newPositionYinPoints
  } );
- closeInputFile();
- closeOutputFile();
+ App::paperback::closeInputFile();
+ App::paperback::closeOutputFile();
 
 =head1 DESCRIPTION
 
