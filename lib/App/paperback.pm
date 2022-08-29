@@ -493,11 +493,11 @@ sub getObject {
 ##########################################################
 sub writeToBeCreated {
 ##########################################################
-  my ($elObje, $out_line, $part, $strPos);
+  my ($elObje, $out_line, $part, $strPos, $old_one, $new_one);
 
   for (@Gto_be_created) {
-    my $old_one = $_->[0];
-    my $new_one = $_->[1];
+    $old_one = $_->[0];
+    $new_one = $_->[1];
     $elObje = getObject($old_one);
     if ( $elObje =~ m'^(\d+ \d+ obj\s*<<)(.+)(>>\s*stream)'s ) {
       $part = $2;
@@ -609,8 +609,8 @@ sub writeRes {
 ##########################################################
 sub xformObjForThisPage {
 ##########################################################
-  my $elObje = $_[0]; my $pagenumber = $_[1];
-  my ( $vector, @pageObj, @pageObjBackup, $pageAccumulator);
+  my ($elObje, $pagenumber) = ($_[0], $_[1]);
+  my ($vector, @pageObj, @pageObjBackup, $pageAccumulator);
 
   return 0 unless $elObje =~ m'/Kids\s*\[([^\]]+)'s;
   $vector = $1;
@@ -757,7 +757,7 @@ sub extractContent {
   my ($incoming_line, $qty, $i, $c);
 
   sysread $IN_FILE, $c, 1;
-  sysread $IN_FILE, $c, 1 while $c =~ m!\s!s;
+  sysread $IN_FILE, $c, 1 while $c =~ m'\s's;
   while ( (defined $c) and ($c ne "\n") and ($c ne "\r") ) {
     $incoming_line .= $c;
     sysread $IN_FILE, $c, 1;
