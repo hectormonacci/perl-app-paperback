@@ -279,7 +279,7 @@ sub writePageStream {
 ##########################################################
 sub writePageResources {
 ##########################################################
-  my $parent = $_[0]; my $resourceObject = $_[1];
+  my ($parent, $resourceObject) = ($_[0], $_[1]);
   $Gpos += syswrite $OUT_FILE, "${GpageObjNr} 0 obj<</Type/Page/Parent ${parent} 0 "
     . "R/Contents ${GobjNr} 0 R/Resources ${resourceObject} 0 R>>endobj\n";
   push @{ $Gkids[0] }, $GpageObjNr;
@@ -454,7 +454,7 @@ sub getRootFromXrefSection {
   ($incoming_line, $qty, $i) = extractContent();
 
   while ($qty) {
-    for ( my $l = 1 ; $l <= $qty ; ++$l ) {
+    for (1..$qty) {
       sysread $IN_FILE, $incoming_line, 20;
       if ( $incoming_line =~ m'^\s?(\d+) \d+ (\w)\s*' ) {
         $GoldObject{$i} = int($1) unless $2 ne "n" or exists $GoldObject{$i};
