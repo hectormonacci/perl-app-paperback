@@ -407,8 +407,8 @@ sub writeEndNode {
 ##########################################################
 sub calcRotateMatrix {
 ##########################################################
-  my $x = $_[0]; my $y = $_[1]; my $rotate = $_[2];
-  my $str = "1 0 0 1 ${x} ${y} cm\n";
+  my $rotate = $_[2];
+  my $str = "1 0 0 1 $_[0] $_[1] cm\n";
 
   if ($rotate) {
     my $upperX = 0; my $upperY = 0;
@@ -732,7 +732,7 @@ sub saveOldObjects {
   for (@offset) {
     $saved = $GoldObject{$_};
     $bytes -= $saved;
-    $GoldObject{$_} = [ $saved, $bytes ] if ($_ !~ m'^xref');
+    $GoldObject{$_} = [ $saved, $bytes ] if ! m'^xref';
     $bytes = $saved;
   }
 }
