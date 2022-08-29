@@ -466,7 +466,7 @@ sub getRootFromXrefSection {
 
   while ($incoming_line) {
     $buf .= $incoming_line;
-    $rooty = $1 if $buf =~ m'\/Root\s+(\d+)\s{1,2}\d+\s{1,2}R's;
+    $rooty = $1 if $buf =~ m'\/Root\s+(\d+)\s+\d+\s+R's;
     last if $rooty;
     sysread $IN_FILE, $incoming_line, 30;
   }
@@ -525,7 +525,7 @@ sub getInputPageDimensions {
   my $elObje = getObject($Groot);
 
   # Find pages:
-  return "unknown" unless $elObje =~ m'/Pages\s+(\d+)\s{1,2}\d+\s{1,2}R's;
+  return "unknown" unless $elObje =~ m'/Pages\s+(\d+)\s+\d+\s+R's;
   $elObje = getObject($1);
 
   $elObje = xformObjForThisPage($elObje, 1);
@@ -570,7 +570,7 @@ sub getPage {
 
   # Find pages:
   die "[!] Didn't find Pages section in '${GinFile}' - aborting" 
-    unless $elObje =~ m'/Pages\s+(\d+)\s{1,2}\d+\s{1,2}R's;
+    unless $elObje =~ m'/Pages\s+(\d+)\s+\d+\s+R's;
   $elObje = getObject($1);
 
   $elObje = xformObjForThisPage($elObje, $pagenumber);
@@ -617,7 +617,7 @@ sub xformObjForThisPage {
 
   $pageAccumulator = 0;
 
-  push @pageObj, $1 while $vector =~ m'(\d+)\s{1,2}\d+\s{1,2}R'gs;
+  push @pageObj, $1 while $vector =~ m'(\d+)\s+\d+\s+R'gs;
   while ( $pageAccumulator < $pagenumber ) {
     @pageObjBackup = @pageObj;
     undef @pageObj;
@@ -628,7 +628,7 @@ sub xformObjForThisPage {
           $pageAccumulator += $1;
         } else {
           $vector = $1 if $elObje =~ m'/Kids\s*\[([^\]]+)'s ;
-          push @pageObj, $1 while $vector =~ m'(\d+)\s{1,2}\d+\s{1,2}R'gs;
+          push @pageObj, $1 while $vector =~ m'(\d+)\s+\d+\s+R'gs;
           last;
         }
       } else {
@@ -656,7 +656,7 @@ sub getResources {
 
   if ( $obj =~ m'/Contents\s+(\d+)'s ) {
     $formCont = $1;
-  } elsif ( $obj =~ m'/Contents\s*\[\s*(\d+)\s{1,2}\d+\s{1,2}R\s*\]'s ) {
+  } elsif ( $obj =~ m'/Contents\s*\[\s*(\d+)\s+\d+\s+R\s*\]'s ) {
     $formCont = $1;
   }
 
@@ -673,7 +673,7 @@ sub getResourcesFromObj {
   my $resources;
 
   if ( $obj =~ m'^(.+/Resources)'s ) {
-    return $1 if $obj =~ m'Resources(\s+\d+\s{1,2}\d+\s{1,2}R)'s; # Reference (95%)
+    return $1 if $obj =~ m'Resources(\s+\d+\s+\d+\s+R)'s; # Reference (95%)
     # The resources are a dictionary. The whole is copied (morfologia.pdf):
     my $k;
     ( undef, $obj ) = split /\/Resources/, $obj;
@@ -710,7 +710,7 @@ sub openInputFile {
 
   # Find pages
   return 0 unless eval { $elObje = getObject($Groot); 1; };
-  if ( $elObje =~ m'/Pages\s+(\d+)\s{1,2}\d+\s{1,2}R's ) {
+  if ( $elObje =~ m'/Pages\s+(\d+)\s+\d+\s+R's ) {
     $elObje = getObject($1);
     return ($1, $inputPageSize) if $elObje =~ m'/Count\s+(\d+)'s;
   }
@@ -746,7 +746,7 @@ sub renew_ddR_and_populate_to_be_created {
     push @Gto_be_created, [ $1, ++$GobjNr ];
     return $Gold{$1} = $GobjNr;
   };
-  $_[0] =~ s/\b(\d+)\s{1,2}\d+\s{1,2}R\b/&$xform . ' 0 R'/eg;
+  $_[0] =~ s/\b(\d+)\s+\d+\s+R\b/&$xform . ' 0 R'/eg;
   return;
 }
 
