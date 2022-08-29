@@ -537,24 +537,24 @@ sub getInputPageDimensions {
     . int($GformBox[3] / 72 * 25.4) . " mm";
 
   for ($multi) {
-  	# US 1/4 letter: 120780
-	  if ($_ > 119_780 and $_ < 121_780) {$GoWid = $DW; $GoHei = $DH; return "QT";}
-		# ISO A6: 124443
-	  if ($_ > 123_443 and $_ < 125_443) {$GoWid = $AW; $GoHei = $AH; return "A6";}
-	  # US 1/4 legal: 153720
-	  if ($_ > 152_720 and $_ < 154_720) {$GoWid = $GW; $GoHei = $GH; return "QG";}
-	  # US 1/2 Letter ("statement"): 242352
-	  if ($_ > 241_352 and $_ < 243_352) {$GoWid = $DW; $GoHei = $DH; return "HT";}
-	  # ISO A5: 249305
-	  if ($_ > 248_305 and $_ < 250_305) {$GoWid = $AW; $GoHei = $AH; return "A5";}
-	  # US 1/2 legal: 308448
-	  if ($_ > 307_448 and $_ < 309_448) {$GoWid = $GW; $GoHei = $GH; return "HG";}
-	  # US letter: 484704
-	  if ($_ > 483_704 and $_ < 485_704) {return "USletter, ${measuresInMm}"; } 
-	  # ISO A4: 500395
-	  if ($_ > 499_395 and $_ < 501_395) {return "A4, ${measuresInMm}"; }
-	  # US legal: 616896
-	  if ($_ > 615_896 and $_ < 617_896) {return "USlegal, ${measuresInMm}";}
+    # US 1/4 letter: 120780
+    if ($_ > 119_780 and $_ < 121_780) {$GoWid = $DW; $GoHei = $DH; return "QT";}
+    # ISO A6: 124443
+    if ($_ > 123_443 and $_ < 125_443) {$GoWid = $AW; $GoHei = $AH; return "A6";}
+    # US 1/4 legal: 153720
+    if ($_ > 152_720 and $_ < 154_720) {$GoWid = $GW; $GoHei = $GH; return "QG";}
+    # US 1/2 Letter ("statement"): 242352
+    if ($_ > 241_352 and $_ < 243_352) {$GoWid = $DW; $GoHei = $DH; return "HT";}
+    # ISO A5: 249305
+    if ($_ > 248_305 and $_ < 250_305) {$GoWid = $AW; $GoHei = $AH; return "A5";}
+    # US 1/2 legal: 308448
+    if ($_ > 307_448 and $_ < 309_448) {$GoWid = $GW; $GoHei = $GH; return "HG";}
+    # US letter: 484704
+    if ($_ > 483_704 and $_ < 485_704) {return "USletter, ${measuresInMm}"; } 
+    # ISO A4: 500395
+    if ($_ > 499_395 and $_ < 501_395) {return "A4, ${measuresInMm}"; }
+    # US legal: 616896
+    if ($_ > 615_896 and $_ < 617_896) {return "USlegal, ${measuresInMm}";}
   }
   return "unknown, ${measuresInMm}";
 }
@@ -785,7 +785,7 @@ sub openOutputFile {
   binmode $OUT_FILE;
   $Gpos = syswrite $OUT_FILE, $pdf_signature;
 
-  $GobjNr      = 2;  # Objeto reservado 1 para raíz y 2 para nodo lateral inicial
+  $GobjNr      = 2;  # Objeto reservado 1 para raíz y 2 para nodo de pág. inicial
   $Gparents[0] = 2;
 
   setInitGrState();
