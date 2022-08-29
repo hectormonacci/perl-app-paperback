@@ -493,8 +493,7 @@ sub getObject {
 ##########################################################
 sub writeToBeCreated {
 ##########################################################
-  my $elObje = $_[0];
-  my ($out_line, $part, $strPos);
+  my ($elObje, $out_line, $part, $strPos);
 
   for (@Gto_be_created) {
     my $old_one = $_->[0];
@@ -579,7 +578,7 @@ sub getPage {
 
   $reference = writeRes($elObje, $formRes, $formCont);
 
-  writeToBeCreated($elObje);
+  writeToBeCreated();
 
   return $reference;
 }
