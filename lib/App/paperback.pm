@@ -435,21 +435,21 @@ sub getRoot {
     $xref = $1;
     # stat[7] = filesize
     die "[!] Invalid XREF, aborting" if $xref > (stat($GinFile))[7];
-    $tempRoot = getRootFromXrefSection( $xref );
+		populateGobjects($xref);
+    $tempRoot = getRootFromXrefSection();
   }
 
   return 0 unless $tempRoot; # No Root object in ${GinFile}, aborting
 
-  saveOldObjects();
   return $tempRoot;
 }
 
 
 ##########################################################
-sub getRootFromXrefSection {
+sub populateGobjects {
 ##########################################################
   my $xref = $_[0];
-  my ( $idx, $qty, $incoming_line, $buf );
+  my ( $idx, $qty, $incoming_line );
 
   sysseek $IN_FILE, $xref += 5, 0;
   ($qty, $idx) = extractXrefSection();
@@ -462,7 +462,16 @@ sub getRootFromXrefSection {
     }
     ($qty, $idx) = extractXrefSection();
   }
+  addSizeToGoldObjects();
+  return;
+}
 
+
+##########################################################
+sub getRootFromXrefSection {
+##########################################################
+  my $incoming_line = " ";
+  my $buf;
   while ($incoming_line) {
     $buf .= $incoming_line;
     return $1 if $buf =~ m'\/Root\s+(\d+)\s+\d+\s+R's;
@@ -719,20 +728,20 @@ sub openInputFile {
 
 
 ##########################################################
-sub saveOldObjects {
+sub addSizeToGoldObjects {
 ##########################################################
-  my $bytes = (stat($GinFile))[7];  # stat[7] = filesize
+  my $size = (stat($GinFile))[7];  # stat[7] = filesize
   # Objects are sorted numerically (<=>) and in reverse order ($b $a)
   # according to their offset in the file: last first
   my @offset = sort { $GoldObject{$b} <=> $GoldObject{$a} } keys %GoldObject;
 
-  my $saved;
+  my $pos;
 
   for (@offset) {
-    $saved = $GoldObject{$_};
-    $bytes -= $saved;
-    $GoldObject{$_} = [ $saved, $bytes ] if ! m'^xref';
-    $bytes = $saved;
+    $pos = $GoldObject{$_};
+    $size -= $pos;
+    $GoldObject{$_} = [ $pos, $size ]; # if ! m'^xref';
+    $size = $pos;
   }
 }
 
