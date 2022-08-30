@@ -7,7 +7,7 @@ our $VERSION = "1.10";
 
 my ($GinFile, $GpageObjNr, $Groot, $Gpos, $GobjNr, $Gstream, $GoWid, $GoHei);
 my (@Gkids, @Gcounts, @GformBox, @Gobject, @Gparents, @Gto_be_created);
-my (%Gold, %GpageXObject, %GoldObject);
+my (%GpageXObject, %GObjects);
 
 # ISO 216 paper sizes in pt:
 my $AH = 841.8898; # [A] A4 ~ 297 mm (H)
@@ -179,7 +179,7 @@ main() if not caller();
 sub newPageInOutputFile {
 ##########################################################
   die "[!] No output file, you must call openOutputFile first" if !$Gpos;
-  writePage() if defined $Gstream and length($Gstream) > 0;
+  writePage() if $Gstream;
 
   ++$GobjNr;
   $GpageObjNr = $GobjNr;
@@ -423,7 +423,7 @@ sub calcRotateMatrix {
 
 
 ##########################################################
-sub getRoot {
+sub getRootAndMapGobjects {
 ##########################################################
   my ( $xref, $tempRoot, $buf );
 
@@ -449,20 +449,20 @@ sub getRoot {
 sub populateGobjects {
 ##########################################################
   my $xref = $_[0];
-  my ( $idx, $qty, $incoming_line );
+  my ( $idx, $qty, $readBytes );
 
   sysseek $IN_FILE, $xref += 5, 0;
   ($qty, $idx) = extractXrefSection();
 
   while ($qty) {
     for (1..$qty) {
-      sysread $IN_FILE, $incoming_line, 20;
-      $GoldObject{$idx} = $1 if $incoming_line =~ m'^\s?(\d+) 0+ n';
+      sysread $IN_FILE, $readBytes, 20;
+      $GObjects{$idx} = $1 if $readBytes =~ m'^\s?(\d+) 0+ n';
       ++$idx;
     }
     ($qty, $idx) = extractXrefSection();
   }
-  addSizeToGoldObjects();
+  addSizeToGObjects();
   return;
 }
 
@@ -470,12 +470,12 @@ sub populateGobjects {
 ##########################################################
 sub getRootFromXrefSection {
 ##########################################################
-  my $incoming_line = " ";
+  my $readBytes = " ";
   my $buf;
-  while ($incoming_line) {
-    $buf .= $incoming_line;
+  while ($readBytes) {
+    $buf .= $readBytes;
     return $1 if $buf =~ m'\/Root\s+(\d+)\s+\d+\s+R's;
-    sysread $IN_FILE, $incoming_line, 30;
+    sysread $IN_FILE, $readBytes, 30;
   }
   return;
 }
@@ -487,9 +487,9 @@ sub getObject {
   my $index = $_[0];
 
   # Either a multiple %%EOF, versioned PDF, or a non-1.4 PDF
-  return 0 if ! defined $GoldObject{$index};
+  return 0 if ! defined $GObjects{$index};
   my $buf;
-  my ( $offs, $size ) = @{ $GoldObject{$index} };
+  my ( $offs, $size ) = @{ $GObjects{$index} };
 
   sysseek $IN_FILE, $offs, 0;
   sysread $IN_FILE, $buf, $size;
@@ -510,12 +510,12 @@ sub writeToBeCreated {
     if ( $elObje =~ m'^(\d+ \d+ obj\s*<<)(.+)(>>\s*stream)'s ) {
       $part = $2;
       $strPos = length($1) + length($2) + length($3);
-      renew_ddR_and_populate_to_be_created($part);
+      update_references_and_populate_to_be_created($part);
       $out_line = "${new_one} 0 obj\n<<${part}>>stream";
       $out_line .= substr( $elObje, $strPos );
     } else {
       $elObje = substr( $elObje, length($1) ) if $elObje =~ m'^(\d+ \d+ obj\s*)'s;
-      renew_ddR_and_populate_to_be_created($elObje);
+      update_references_and_populate_to_be_created($elObje);
       $out_line = "${new_one} 0 obj ${elObje}";
     }
     $Gobject[$new_one] = $Gpos;
@@ -606,7 +606,7 @@ sub writeRes {
   ++$GobjNr;
   $Gobject[$GobjNr] = $Gpos;
   my $reference = $GobjNr;
-  renew_ddR_and_populate_to_be_created($newPart);
+  update_references_and_populate_to_be_created($newPart);
   $out_line = "${reference} 0 obj\n${newPart}>>\nstream";
   $out_line .= substr( $elObje, $strPos );
   $Gpos += syswrite $OUT_FILE, $out_line;
@@ -711,7 +711,7 @@ sub openInputFile {
   binmode $IN_FILE;
 
   # Find root
-  $Groot = getRoot();
+  $Groot = getRootAndMapGobjects();
 
   # Find input page size:
   $inputPageSize = getInputPageDimensions();
@@ -728,32 +728,34 @@ sub openInputFile {
 
 
 ##########################################################
-sub addSizeToGoldObjects {
+sub addSizeToGObjects {
 ##########################################################
   my $size = (stat($GinFile))[7];  # stat[7] = filesize
   # Objects are sorted numerically (<=>) and in reverse order ($b $a)
   # according to their offset in the file: last first
-  my @offset = sort { $GoldObject{$b} <=> $GoldObject{$a} } keys %GoldObject;
+  my @offset = sort { $GObjects{$b} <=> $GObjects{$a} } keys %GObjects;
 
   my $pos;
 
   for (@offset) {
-    $pos = $GoldObject{$_};
+    $pos = $GObjects{$_};
     $size -= $pos;
-    $GoldObject{$_} = [ $pos, $size ]; # if ! m'^xref';
+    $GObjects{$_} = [ $pos, $size ]; # if ! m'^xref';
     $size = $pos;
   }
 }
 
 
 ##########################################################
-sub renew_ddR_and_populate_to_be_created {
+sub update_references_and_populate_to_be_created {
 ##########################################################
   # $xform translates an old object number to a new one
   # and populates a table with what must be created
-  my $xform = sub { return $Gold{$1} if exists $Gold{$1};
+  state %known;
+  my $xform = sub {
+  	return $known{$1} if exists $known{$1};
     push @Gto_be_created, [ $1, ++$GobjNr ];
-    return $Gold{$1} = $GobjNr;
+    return $known{$1} = $GobjNr;
   };
   $_[0] =~ s/\b(\d+)\s+\d+\s+R\b/&$xform . ' 0 R'/eg;
   return;
@@ -763,15 +765,15 @@ sub renew_ddR_and_populate_to_be_created {
 ##########################################################
 sub extractXrefSection {
 ##########################################################
-  my ($incoming_line, $qty, $idx, $c);
+  my $readBytes = ""; my ($qty, $idx, $c);
 
   sysread $IN_FILE, $c, 1;
   sysread $IN_FILE, $c, 1 while $c =~ m'\s's;
   while ( $c =~ /[\d ]/ ) {
-    $incoming_line .= $c;
+    $readBytes .= $c;
     sysread $IN_FILE, $c, 1;
   }
-  ($idx, $qty) = ($1, $2) if $incoming_line =~ m'^(\d+)\s+(\d+)';
+  ($idx, $qty) = ($1, $2) if $readBytes =~ m'^(\d+)\s+(\d+)';
 
   return ($qty, $idx);
 }
