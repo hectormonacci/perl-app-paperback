@@ -435,7 +435,7 @@ sub getRootAndMapGobjects {
     $xref = $1;
     # stat[7] = filesize
     die "[!] Invalid XREF, aborting" if $xref > (stat($GinFile))[7];
-		populateGobjects($xref);
+    populateGobjects($xref);
     $tempRoot = getRootFromXrefSection();
   }
 
@@ -753,7 +753,7 @@ sub update_references_and_populate_to_be_created {
   # and populates a table with what must be created
   state %known;
   my $xform = sub {
-  	return $known{$1} if exists $known{$1};
+    return $known{$1} if exists $known{$1};
     push @Gto_be_created, [ $1, ++$GobjNr ];
     return $known{$1} = $GobjNr;
   };
