@@ -119,7 +119,7 @@ END_MESSAGE
   die "[!] File '${input}' can't be found or read.\n"
     unless -r $input;
   ($num_pag_input, $pgSizeInput) = openInputFile($input);
-  die "[!] File '${input}' is not a valid v1.4 PDF file.\n"
+  die "[!] File '${input}' is not a valid v1.4 PDF file, or has been edited.\n"
     if $num_pag_input == 0;
 
   my ($pgPerOutputPage, @x, @y);
@@ -439,6 +439,7 @@ sub getRoot {
   }
 
   return 0 unless $tempRoot; # No Root object in ${GinFile}, aborting
+
   saveOldObjects();
   return $tempRoot;
 }
@@ -448,30 +449,26 @@ sub getRoot {
 sub getRootFromXrefSection {
 ##########################################################
   my $xref = $_[0];
-  my ( $i, $rooty, $qty, $incoming_line, $buf );
+  my ( $idx, $qty, $incoming_line, $buf );
 
   sysseek $IN_FILE, $xref += 5, 0;
-  ($incoming_line, $qty, $i) = extractContent();
+  ($qty, $idx) = extractXrefSection();
 
   while ($qty) {
     for (1..$qty) {
       sysread $IN_FILE, $incoming_line, 20;
-      if ( $incoming_line =~ m'^\s?(\d+) \d+ (\w)\s*' ) {
-        $GoldObject{$i} = int($1) unless $2 ne "n" or exists $GoldObject{$i};
-      }
-      ++$i;
+      $GoldObject{$idx} = $1 if $incoming_line =~ m'^\s?(\d+) 0+ n';
+      ++$idx;
     }
-    ($incoming_line, $qty, $i) = extractContent();
+    ($qty, $idx) = extractXrefSection();
   }
 
   while ($incoming_line) {
     $buf .= $incoming_line;
-    $rooty = $1 if $buf =~ m'\/Root\s+(\d+)\s+\d+\s+R's;
-    last if $rooty;
+    return $1 if $buf =~ m'\/Root\s+(\d+)\s+\d+\s+R's;
     sysread $IN_FILE, $incoming_line, 30;
   }
-
-  return $rooty;
+  return;
 }
 
 
@@ -479,6 +476,8 @@ sub getRootFromXrefSection {
 sub getObject {
 ##########################################################
   my $index = $_[0];
+
+  # Either a multiple %%EOF, versioned PDF, or a non-1.4 PDF
   return 0 if ! defined $GoldObject{$index};
   my $buf;
   my ( $offs, $size ) = @{ $GoldObject{$index} };
@@ -710,6 +709,7 @@ sub openInputFile {
 
   # Find pages
   return 0 unless eval { $elObje = getObject($Groot); 1; };
+
   if ( $elObje =~ m'/Pages\s+(\d+)\s+\d+\s+R's ) {
     $elObje = getObject($1);
     return ($1, $inputPageSize) if $elObje =~ m'/Count\s+(\d+)'s;
@@ -752,22 +752,19 @@ sub renew_ddR_and_populate_to_be_created {
 
 
 ##########################################################
-sub extractContent {
+sub extractXrefSection {
 ##########################################################
-  my ($incoming_line, $qty, $i, $c);
+  my ($incoming_line, $qty, $idx, $c);
 
   sysread $IN_FILE, $c, 1;
   sysread $IN_FILE, $c, 1 while $c =~ m'\s's;
-  while ( (defined $c) and ($c ne "\n") and ($c ne "\r") ) {
+  while ( $c =~ /[\d ]/ ) {
     $incoming_line .= $c;
     sysread $IN_FILE, $c, 1;
   }
-  if ( $incoming_line =~ m'^(\d+)\s+(\d+)' ) {
-    $i   = $1;
-    $qty = $2;
-  }
+  ($idx, $qty) = ($1, $2) if $incoming_line =~ m'^(\d+)\s+(\d+)';
 
-  return ($incoming_line, $qty, $i);
+  return ($qty, $idx);
 }
 
 
