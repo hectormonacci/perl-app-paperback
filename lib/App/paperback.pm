@@ -3,7 +3,7 @@ package App::paperback;
 use v5.10;
 use strict;
 # use warnings;
-our $VERSION = "1.11";
+our $VERSION = "1.12";
 
 my ($GinFile, $GpageObjNr, $Groot, $Gpos, $GobjNr, $Gstream, $GoWid, $GoHei);
 my (@Gkids, @Gcounts, @GformBox, @Gobject, @Gparents, @Gto_be_created);
@@ -237,7 +237,7 @@ sub createPageResourceDict {
     $resourceDict .= "/$_ $GpageXObject{$_} 0 R" for sort keys %GpageXObject;
     $resourceDict .= ">>";
   }
-  $resourceDict .= "/ExtGState<<\/Gs0 4 0 R>>";
+  $resourceDict .= "/ExtGState<</Gs0 4 0 R>>";
   return $resourceDict;
 }
 
@@ -396,8 +396,7 @@ sub writeEndNode {
   # Arrange and print the end node:
   $nodeObj  = "${endNode} 0 obj<</Type/Pages/Kids [";
   $nodeObj .= "${_} 0 R " for @{ $Gkids[$si] };
-  $nodeObj .= "]/Count ${Gcounts[$si]}/MediaBox \[0 0 ";
-  $nodeObj .= "${GoWid} ${GoHei}\]>>endobj\n";
+  $nodeObj .= "]/Count ${Gcounts[$si]}/MediaBox [0 0 ${GoWid} ${GoHei}]>>endobj\n";
   $Gobject[$endNode] = $Gpos;
   $Gpos += syswrite $OUT_FILE, $nodeObj;
   return $endNode;
@@ -408,7 +407,7 @@ sub writeEndNode {
 sub calcRotateMatrix {
 ##########################################################
   my $rotate = $_[2];
-  my $str = "1 0 0 1 $_[0] $_[1] cm\n";
+  my $str = "1 0 0 1 ${_[0]} ${_[1]} cm\n";
 
   if ($rotate) {
     my $upperX = 0; my $upperY = 0;
@@ -602,7 +601,8 @@ sub writeRes {
   $elObje =~ m'^(\d+ \d+ obj\s*<<)(.+)(>>\s*stream)'s;
   my $strPos = length($1) + length($2) + length($3);
   my $newPart = "<</Type/XObject/Subtype/Form/FormType 1/Resources ${formRes}"
-    . "/BBox \[ $GformBox[0] $GformBox[1] $GformBox[2] $GformBox[3]\] ${2}";
+    . "/BBox [@{GformBox}] ${2}";
+
   ++$GobjNr;
   $Gobject[$GobjNr] = $Gpos;
   my $reference = $GobjNr;
