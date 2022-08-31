@@ -3,7 +3,7 @@ package App::paperback;
 use v5.10;
 use strict;
 # use warnings;
-our $VERSION = "1.10";
+our $VERSION = "1.11";
 
 my ($GinFile, $GpageObjNr, $Groot, $Gpos, $GobjNr, $Gstream, $GoWid, $GoHei);
 my (@Gkids, @Gcounts, @GformBox, @Gobject, @Gparents, @Gto_be_created);
@@ -847,6 +847,9 @@ into a new PDF file. Input PDF should:
 2. Consist of vertical-oriented pages of the same size;
 
 3. Use page sizes of A5 or A6 or Half Letter or Quarter Letter
-or Half Legal or Quarter Legal.
+or Half Legal or Quarter Legal;
+
+4. Not be a 'versioned' PDF file (one that has been edited
+after its creation).
 
 =cut
