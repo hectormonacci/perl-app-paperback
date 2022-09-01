@@ -2,7 +2,7 @@ package App::paperback;
 
 use v5.10;
 use strict;
-# use warnings;
+use warnings;
 our $VERSION = "1.12";
 
 my ($GinFile, $GpageObjNr, $Groot, $Gpos, $GobjNr, $Gstream, $GoWid, $GoHei);
@@ -424,19 +424,33 @@ sub calcRotateMatrix {
 ##########################################################
 sub getRootAndMapGobjects {
 ##########################################################
-  my ( $xref, $tempRoot, $buf );
+  my ( $xref, $tempRoot, $buf, $buf2 );
 
-  sysseek $IN_FILE, -50, 2;
-  sysread $IN_FILE, $buf, 100;
+  sysseek $IN_FILE, -150, 2;
+  sysread $IN_FILE, $buf, 200;
   die "[!] File ${GinFile} is encrypted, cannot be used, aborting"
     if $buf =~ m'Encrypt';
-  if ( $buf =~ m'\bstartxref\s+(\d+)' ) {
+
+  if ($buf =~ m'/Prev\s+(\d+)') { # "Versioned" PDF file (several xref sections)
+    while ($buf =~ m'/Prev\s+(\d+)') {
+      $xref = $1;
+      sysseek $IN_FILE, $xref, 0;
+      sysread $IN_FILE, $buf, 200;
+      # Reading 200 chars is NOT enough. Read thru till we find 1st %%EOF:
+      until ($buf =~ m'%%EOF') {
+        sysread $IN_FILE, $buf2, 200;
+        $buf .= $buf2;
+      }
+    }
+  } elsif ( $buf =~ m'\bstartxref\s+(\d+)' ) { # Non-versioned PDF file
     $xref = $1;
-    # stat[7] = filesize
-    die "[!] Invalid XREF, aborting" if $xref > (stat($GinFile))[7];
-    populateGobjects($xref);
-    $tempRoot = getRootFromXrefSection();
+  } else {
+    $xref = 0;
   }
+  # stat[7] = filesize
+  die "[!] Invalid XREF, aborting" if $xref > (stat($GinFile))[7];
+  populateGobjects($xref);
+  $tempRoot = getRootFromXrefSection();
 
   return 0 unless $tempRoot; # No Root object in ${GinFile}, aborting
 
@@ -456,7 +470,7 @@ sub populateGobjects {
   while ($qty) {
     for (1..$qty) {
       sysread $IN_FILE, $readBytes, 20;
-      $GObjects{$idx} = $1 if $readBytes =~ m'^\s?(\d+) 0+ n';
+      $GObjects{$idx} = $1 if $readBytes =~ m'^\s?(\d{10}) \d{5} n';
       ++$idx;
     }
     ($qty, $idx) = extractXrefSection();
@@ -485,8 +499,7 @@ sub getObject {
 ##########################################################
   my $index = $_[0];
 
-  # Either a multiple %%EOF, versioned PDF, or a non-1.4 PDF
-  return 0 if ! defined $GObjects{$index};
+  return 0 if (! defined $GObjects{$index});   # A non-1.4 PDF
   my $buf;
   my ( $offs, $size ) = @{ $GObjects{$index} };
 
@@ -848,8 +861,5 @@ into a new PDF file. Input PDF should:
 
 3. Use page sizes of A5 or A6 or Half Letter or Quarter Letter
 or Half Legal or Quarter Legal;
-
-4. Not be a 'versioned' PDF file (one that has been edited
-after its creation).
 
 =cut
