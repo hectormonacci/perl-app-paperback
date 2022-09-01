@@ -3,7 +3,7 @@ package App::paperback;
 use v5.10;
 use strict;
 use warnings;
-our $VERSION = "1.13";
+our $VERSION = "1.14";
 
 my ($GinFile, $GpageObjNr, $Groot, $Gpos, $GobjNr, $Gstream, $GoWid, $GoHei);
 my (@Gkids, @Gcounts, @GformBox, @Gobject, @Gparents, @Gto_be_created);
@@ -221,9 +221,8 @@ sub setInitGrState {
   ++$GobjNr;
 
   $Gobject[$GobjNr] = $Gpos;
-  my $out_line = "${GobjNr} 0 obj<</Type/ExtGState/SA false/SM 0.02/TR2 /Default"
-    . ">>endobj\n";
-  $Gpos += syswrite $OUT_FILE, $out_line;
+  $Gpos += syswrite $OUT_FILE,
+    "${GobjNr} 0 obj<</Type/ExtGState/SA false/SM 0.02/TR2 /Default>>endobj\n";
   return;
 }
 
@@ -431,12 +430,12 @@ sub getRootAndMapGobjects {
   die "[!] File ${GinFile} is encrypted, cannot be used, aborting.\n"
     if $buf =~ m'Encrypt';
 
-  if ($buf =~ m'/Prev\s+(\d+)') { # "Versioned" PDF file (several xref sections)
+  if ($buf =~ m'/Prev\s+\d') { # "Versioned" PDF file (several xref sections)
     while ($buf =~ m'/Prev\s+(\d+)') {
       $xref = $1;
       sysseek $IN_FILE, $xref, 0;
       sysread $IN_FILE, $buf, 200;
-      # Reading 200 chars is NOT enough. Read thru till we find 1st %%EOF:
+      # Reading 200 bytes may NOT be enough. Read on till we find 1st %%EOF:
       until ($buf =~ m'%%EOF') {
         sysread $IN_FILE, $buf2, 200;
         $buf .= $buf2;
@@ -445,7 +444,7 @@ sub getRootAndMapGobjects {
   } elsif ( $buf =~ m'\bstartxref\s+(\d+)' ) { # Non-versioned PDF file
     $xref = $1;
   } else {
-    $xref = 0;
+    return 0;
   }
   # stat[7] = filesize
   die "[!] Invalid XREF, aborting.\n" if $xref > (stat($GinFile))[7];
@@ -486,9 +485,9 @@ sub getRootFromXrefSection {
   my $readBytes = " ";
   my $buf;
   while ($readBytes) {
+    sysread $IN_FILE, $readBytes, 200;
     $buf .= $readBytes;
     return $1 if $buf =~ m'\/Root\s+(\d+)\s+\d+\s+R's;
-    sysread $IN_FILE, $readBytes, 30;
   }
   return;
 }
@@ -717,14 +716,18 @@ sub getResourcesFromObj {
 sub openInputFile {
 ##########################################################
   $GinFile = $_[0];
-  my ( $elObje, $inputPageSize );
+  my ( $elObje, $inputPageSize, $c );
 
   open( $IN_FILE, q{<}, $GinFile )
     or die "[!] Couldn't open '${GinFile}'.\n";
   binmode $IN_FILE;
 
+  sysread $IN_FILE, $c, 5;
+  return 0 if $c ne "%PDF-";
+
   # Find root
   $Groot = getRootAndMapGobjects();
+  return 0 unless $Groot > 0;
 
   # Find input page size:
   $inputPageSize = getInputPageDimensions();
@@ -860,6 +863,6 @@ into a new PDF file. Input PDF should:
 2. Consist of vertical-oriented pages of the same size;
 
 3. Use page sizes of A5 or A6 or Half Letter or Quarter Letter
-or Half Legal or Quarter Legal;
+or Half Legal or Quarter Legal.
 
 =cut
