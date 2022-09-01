@@ -3,7 +3,7 @@ package App::paperback;
 use v5.10;
 use strict;
 use warnings;
-our $VERSION = "1.12";
+our $VERSION = "1.13";
 
 my ($GinFile, $GpageObjNr, $Groot, $Gpos, $GobjNr, $Gstream, $GoWid, $GoHei);
 my (@Gkids, @Gcounts, @GformBox, @Gobject, @Gparents, @Gto_be_created);
@@ -119,7 +119,7 @@ END_MESSAGE
   die "[!] File '${input}' can't be found or read.\n"
     unless -r $input;
   ($num_pag_input, $pgSizeInput) = openInputFile($input);
-  die "[!] File '${input}' is not a valid v1.4 PDF file, or has been edited.\n"
+  die "[!] File '${input}' is not a valid v1.4 PDF file.\n"
     if $num_pag_input == 0;
 
   my ($pgPerOutputPage, @x, @y);
@@ -178,7 +178,7 @@ main() if not caller();
 ##########################################################
 sub newPageInOutputFile {
 ##########################################################
-  die "[!] No output file, you must call openOutputFile first" if !$Gpos;
+  die "[!] No output file, you must call openOutputFile first.\n" if !$Gpos;
   writePage() if $Gstream;
 
   ++$GobjNr;
@@ -192,7 +192,7 @@ sub newPageInOutputFile {
 ##########################################################
 sub copyPageFromInputToOutput {
 ##########################################################
-  die "[!] No output file, you have to call openOutputFile first" if !$Gpos;
+  die "[!] No output file, you have to call openOutputFile first.\n" if !$Gpos;
   my $param      = $_[0];
   my $pagenumber = $param->{'page'}   or 1;
   my $x          = $param->{'x'}      or 0;
@@ -204,9 +204,9 @@ sub copyPageFromInputToOutput {
 
   my $name = "Fm${formNr}";
   my $refNr = getPage( $pagenumber );
-  die "[!] Page ${pagenumber} in ${GinFile} can't be used. Concatenate streams!" 
+  die "[!] Page ${pagenumber} in ${GinFile} can't be used. Concatenate streams!\n" 
     if !defined $refNr;
-  die "[!] Page ${pagenumber} doesn't exist in file ${GinFile}" if !$refNr;
+  die "[!] Page ${pagenumber} doesn't exist in file ${GinFile}.\n" if !$refNr;
 
   $Gstream .= "q\n" . calcRotateMatrix($x, $y, $rotate) ."\n/Gs0 gs\n/${name} Do\nQ\n";
   $GpageXObject{$name} = $refNr;
@@ -428,7 +428,7 @@ sub getRootAndMapGobjects {
 
   sysseek $IN_FILE, -150, 2;
   sysread $IN_FILE, $buf, 200;
-  die "[!] File ${GinFile} is encrypted, cannot be used, aborting"
+  die "[!] File ${GinFile} is encrypted, cannot be used, aborting.\n"
     if $buf =~ m'Encrypt';
 
   if ($buf =~ m'/Prev\s+(\d+)') { # "Versioned" PDF file (several xref sections)
@@ -448,7 +448,7 @@ sub getRootAndMapGobjects {
     $xref = 0;
   }
   # stat[7] = filesize
-  die "[!] Invalid XREF, aborting" if $xref > (stat($GinFile))[7];
+  die "[!] Invalid XREF, aborting.\n" if $xref > (stat($GinFile))[7];
   populateGobjects($xref);
   $tempRoot = getRootFromXrefSection();
 
@@ -589,7 +589,7 @@ sub getPage {
   my $elObje = getObject($Groot);
 
   # Find pages:
-  die "[!] Didn't find Pages section in '${GinFile}' - aborting" 
+  die "[!] Didn't find Pages section in '${GinFile}', aborting.\n" 
     unless $elObje =~ m'/Pages\s+(\d+)\s+\d+\s+R's;
   $elObje = getObject($1);
 
@@ -720,7 +720,7 @@ sub openInputFile {
   my ( $elObje, $inputPageSize );
 
   open( $IN_FILE, q{<}, $GinFile )
-    or die "[!] Couldn't open ${GinFile}";
+    or die "[!] Couldn't open '${GinFile}'.\n";
   binmode $IN_FILE;
 
   # Find root
@@ -801,7 +801,7 @@ sub openOutputFile {
   my $pdf_signature = "%PDF-1.4\n%\â\ã\Ï\Ó\n"; # Keep it far from file beginning!
 
   open( $OUT_FILE, q{>}, $outputfile )
-    or die "[!] Couldn't open file ${outputfile}";
+    or die "[!] Couldn't open file '${outputfile}'.\n";
   binmode $OUT_FILE;
   $Gpos = syswrite $OUT_FILE, $pdf_signature;
 
