@@ -3,7 +3,7 @@ package App::paperback;
 use v5.10;
 use strict;
 # use warnings;
-our $VERSION = "1.15";
+our $VERSION = "1.16";
 
 my ($GinFile, $GpageObjNr, $Groot, $Gpos, $GobjNr, $Gstream, $GoWid, $GoHei);
 my (@Gkids, @Gcounts, @GformBox, @Gobject, @Gparents, @Gto_be_created);
@@ -459,23 +459,18 @@ sub getRootAndMapGobjects {
 
 
 ##########################################################
-sub populateGobjects {
+sub getGobjectsFromXrefStream {
+##########################################################	
+  die "[!] File '${GinFile}' uses xref streams (not a v1.4 PDF file).\n";
+}
+
+
 ##########################################################
-  my $xref = $_[0];
+sub getGobjectsFromTraditionalXref {
+##########################################################
   my ( $idx, $qty, $readBytes );
-
-  sysseek $IN_FILE, $xref, 0;
-  sysread $IN_FILE, $readBytes, 22;
-
-	die "[!] File '${GinFile}' uses xref streams (not a v1.4 PDF file).\n"
-    if $readBytes =~ m/^\d+\s+\d+\s+obj/i; # Road to manage v1.5+ PDF files!
-  die "[!] File '${GinFile}' has a malformed xref table.\n"
-    unless $readBytes =~ m/^(xref$cr)/i;
-  my $extra = length($1);
-
-  sysseek $IN_FILE, $xref += $extra, 0;
+  sysseek $IN_FILE, $_[0], 0;
   ($qty, $idx) = extractXrefSection();
-
   while ($qty) {
     for (1..$qty) {
       sysread $IN_FILE, $readBytes, 20;
@@ -484,7 +479,27 @@ sub populateGobjects {
     }
     ($qty, $idx) = extractXrefSection();
   }
+  return;
+}
 
+
+##########################################################
+sub populateGobjects {
+##########################################################
+  my $xref = $_[0];
+  my $readBytes;
+
+  sysseek $IN_FILE, $xref, 0;
+  sysread $IN_FILE, $readBytes, 22;
+
+  if ($readBytes =~ /^(xref$cr)/) {              # Input PDF is v1.4 or lower
+    getGobjectsFromTraditionalXref($xref + length($1));
+  } elsif ($readBytes =~ m'^\d+\s+\d+\s+obj'i) { # Input PDF is v1.5 or higher
+    getGobjectsFromXrefStream($xref);
+  } else {
+    die "[!] File '${GinFile}' has a malformed xref table.\n";
+  }
+  
   addSizeToGObjects();
   return;
 }
