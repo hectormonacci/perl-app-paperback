@@ -5,7 +5,7 @@ use strict;
 # use warnings;
 our $VERSION = "1.16";
 
-my ($GinFile, $GpageObjNr, $Groot, $Gpos, $GobjNr, $Gstream, $GoWid, $GoHei);
+my ($GinFile, $GpageObjNr, $GrootNr, $Gpos, $GobjNr, $Gstream, $GoWid, $GoHei);
 my (@Gkids, @Gcounts, @GformBox, @Gobject, @Gparents, @Gto_be_created);
 my (%GpageXObject, %GObjects);
 
@@ -67,7 +67,7 @@ my ( $IN_FILE, $OUT_FILE );
 sub main {
 ##########################################################
   my $input = $ARGV[0];
-  my $num_pag_input; my $pgSizeInput;
+  my $num_pag_input; my $inpPgSize;
   my $numPagImposed = 0;
   my $sayUsage = "Usage: paperback file.pdf (will produce 'file-paperback.pdf').";
   my $sayVersion = "This is paperback v${VERSION}, (c) 2022 Hector M. Monacci.";
@@ -120,19 +120,19 @@ END_MESSAGE
     if $input =~ "^-v\$" or $input =~ "^--version\$";
   die "[!] File '${input}' can't be found or read.\n"
     unless -r $input;
-  ($num_pag_input, $pgSizeInput) = openInputFile($input);
+  ($num_pag_input, $inpPgSize) = openInputFile($input);
   die "[!] File '${input}' is not a valid v1.4 PDF file.\n"
     if $num_pag_input == 0;
 
   my ($pgPerOutputPage, @x, @y);
-  for ($pgSizeInput) {
+  for ($inpPgSize) {
     if    ($_ eq "A6") { $pgPerOutputPage = 4; @x = @X_A6_ON_A4; @y = @Y_A6_ON_A4; }
     elsif ($_ eq "A5") { $pgPerOutputPage = 2; @x = @X_A5_ON_A4; @y = @Y_A5_ON_A4; }
     elsif ($_ eq "QT") { $pgPerOutputPage = 4; @x = @X_QT_ON_LT; @y = @Y_QT_ON_LT; }
     elsif ($_ eq "QG") { $pgPerOutputPage = 4; @x = @X_QG_ON_LG; @y = @Y_QG_ON_LG; }
     elsif ($_ eq "HT") { $pgPerOutputPage = 2; @x = @X_HT_ON_LT; @y = @Y_HT_ON_LT; }
     elsif ($_ eq "HG") { $pgPerOutputPage = 2; @x = @X_HG_ON_LG; @y = @Y_HG_ON_LG; }
-    else {die "[!] Bad page size (${pgSizeInput}). See 'paperback -h' to learn more.\n"}
+    else {die "[!] Bad page size (${inpPgSize}). See 'paperback -h' to learn more.\n"}
   }
 
   my ($name) = $input =~ /(.+)\.[^.]+$/;
@@ -452,21 +452,15 @@ sub getRootAndMapGobjects {
   # stat[7] = filesize
   die "[!] Invalid XREF, aborting.\n" if $xref > (stat($GinFile))[7];
   populateGobjects($xref);
-  $tempRoot = getRootFromXrefSection();
+  return $GrootNr if defined $GrootNr;
+  $tempRoot = getRootFromTraditionalXrefSection();
   return 0 unless $tempRoot; # No Root object in ${GinFile}, aborting
   return $tempRoot;
 }
 
 
 ##########################################################
-sub getGobjectsFromXrefStream {
-##########################################################	
-  die "[!] File '${GinFile}' uses xref streams (not a v1.4 PDF file).\n";
-}
-
-
-##########################################################
-sub getGobjectsFromTraditionalXref {
+sub mapGobjectsFromTraditionalXref {
 ##########################################################
   my ( $idx, $qty, $readBytes );
   sysseek $IN_FILE, $_[0], 0;
@@ -486,16 +480,16 @@ sub getGobjectsFromTraditionalXref {
 ##########################################################
 sub populateGobjects {
 ##########################################################
-  my $xref = $_[0];
+  my $xrefPos = $_[0];
   my $readBytes;
 
-  sysseek $IN_FILE, $xref, 0;
+  sysseek $IN_FILE, $xrefPos, 0;
   sysread $IN_FILE, $readBytes, 22;
 
   if ($readBytes =~ /^(xref$cr)/) {              # Input PDF is v1.4 or lower
-    getGobjectsFromTraditionalXref($xref + length($1));
+    mapGobjectsFromTraditionalXref($xrefPos + length($1));
   } elsif ($readBytes =~ m'^\d+\s+\d+\s+obj'i) { # Input PDF is v1.5 or higher
-    getGobjectsFromXrefStream($xref);
+    die "[!] File '${GinFile}' uses xref streams (not a v1.4 PDF file).\n";
   } else {
     die "[!] File '${GinFile}' has a malformed xref table.\n";
   }
@@ -506,7 +500,7 @@ sub populateGobjects {
 
 
 ##########################################################
-sub getRootFromXrefSection {
+sub getRootFromTraditionalXrefSection {
 ##########################################################
   my $readBytes = " ";
   my $buf;
@@ -520,17 +514,15 @@ sub getRootFromXrefSection {
 
 
 ##########################################################
-sub getObject {
+sub getObjectContent {
 ##########################################################
   my $index = $_[0];
 
   return 0 if (! defined $GObjects{$index});   # A non-1.4 PDF
-  my $buf;
-  my ( $offs, $size ) = @{ $GObjects{$index} };
-
-  sysseek $IN_FILE, $offs, 0;
+  my ($buf, $buf2);
+  my ($offset, $size) = @{ $GObjects{$index} };
+  sysseek $IN_FILE, $offset, 0;
   sysread $IN_FILE, $buf, $size;
-
   return $buf;
 }
 
@@ -538,22 +530,23 @@ sub getObject {
 ##########################################################
 sub writeToBeCreated {
 ##########################################################
-  my ($elObje, $out_line, $part, $strPos, $old_one, $new_one);
+  my ($objectContent, $out_line, $part, $strPos, $old_one, $new_one);
 
   for (@Gto_be_created) {
     $old_one = $_->[0];
     $new_one = $_->[1];
-    $elObje = getObject($old_one);
-    if ( $elObje =~ m'^(\d+ \d+ obj\s*<<)(.+)(>>\s*stream)'s ) {
+    $objectContent = getObjectContent($old_one);
+    if ( $objectContent =~ m'^(\d+ \d+ obj\s*<<)(.+)(>>\s*stream)'s ) {
       $part = $2;
       $strPos = length($1) + length($2) + length($3);
       update_references_and_populate_to_be_created($part);
       $out_line = "${new_one} 0 obj\n<<${part}>>stream";
-      $out_line .= substr( $elObje, $strPos );
+      $out_line .= substr( $objectContent, $strPos );
     } else {
-      $elObje = substr( $elObje, length($1) ) if $elObje =~ m'^(\d+ \d+ obj\s*)'s;
-      update_references_and_populate_to_be_created($elObje);
-      $out_line = "${new_one} 0 obj ${elObje}";
+      $objectContent = substr( $objectContent, length($1) ) 
+        if $objectContent =~ m'^(\d+ \d+ obj\s*)'s;
+      update_references_and_populate_to_be_created($objectContent);
+      $out_line = "${new_one} 0 obj ${objectContent}";
     }
     $Gobject[$new_one] = $Gpos;
     $Gpos += syswrite $OUT_FILE, $out_line;
@@ -567,14 +560,14 @@ sub writeToBeCreated {
 sub getInputPageDimensions {
 ##########################################################
   # Find root:
-  my $elObje = getObject($Groot);
+  my $objectContent = getObjectContent($GrootNr);
 
   # Find pages:
-  return "unknown" unless $elObje =~ m'/Pages\s+(\d+)\s+\d+\s+R's;
-  $elObje = getObject($1);
+  return "unknown" unless $objectContent =~ m'/Pages\s+(\d+)\s+\d+\s+R's;
+  $objectContent = getObjectContent($1);
 
-  $elObje = xformObjForThisPage($elObje, 1);
-  (undef, undef) = getResources( $elObje );
+  $objectContent = xformObjForThisPage($objectContent, 1);
+  (undef, undef) = getPageResources( $objectContent );
   return 0 if ! defined $GformBox[2] or ! defined $GformBox[3];
   my $multi = int($GformBox[2]) * int($GformBox[3]);
   my $measuresInMm = int($GformBox[2] / 72 * 25.4) . " x "
@@ -611,17 +604,17 @@ sub getPage {
   my ( $reference, $formRes, $formCont );
 
   # Find root:
-  my $elObje = getObject($Groot);
+  my $objectContent = getObjectContent($GrootNr);
 
   # Find pages:
   die "[!] Didn't find Pages section in '${GinFile}', aborting.\n" 
-    unless $elObje =~ m'/Pages\s+(\d+)\s+\d+\s+R's;
-  $elObje = getObject($1);
+    unless $objectContent =~ m'/Pages\s+(\d+)\s+\d+\s+R's;
+  $objectContent = getObjectContent($1);
 
-  $elObje = xformObjForThisPage($elObje, $pagenumber);
-  ($formRes, $formCont) = getResources( $elObje );
+  $objectContent = xformObjForThisPage($objectContent, $pagenumber);
+  ($formRes, $formCont) = getPageResources( $objectContent );
 
-  $reference = writeRes($elObje, $formRes, $formCont);
+  $reference = writeRes($formRes, $formCont);
 
   writeToBeCreated();
 
@@ -632,11 +625,10 @@ sub getPage {
 ##########################################################
 sub writeRes {
 ##########################################################
-  my ($elObje, $formRes, $formCont) = ($_[0], $_[1], $_[2]);
-  my $out_line;
+  my ($formRes, $objNr) = ($_[0], $_[1]);
 
-  $elObje = getObject($formCont);
-  $elObje =~ m'^(\d+ \d+ obj\s*<<)(.+)(>>\s*stream)'s;
+  my $objectContent = getObjectContent($objNr);
+  $objectContent =~ m'^(\d+ \d+ obj\s*<<)(.+)(>>\s*stream)'s;
   my $strPos = length($1) + length($2) + length($3);
   my $newPart = "<</Type/XObject/Subtype/Form/FormType 1/Resources ${formRes}"
     . "/BBox [@{GformBox}] ${2}";
@@ -645,8 +637,8 @@ sub writeRes {
   $Gobject[$GobjNr] = $Gpos;
   my $reference = $GobjNr;
   update_references_and_populate_to_be_created($newPart);
-  $out_line = "${reference} 0 obj\n${newPart}>>\nstream";
-  $out_line .= substr( $elObje, $strPos );
+  my $out_line = "${reference} 0 obj\n${newPart}>>\nstream";
+  $out_line .= substr( $objectContent, $strPos );
   $Gpos += syswrite $OUT_FILE, $out_line;
   return $reference;
 }
@@ -655,10 +647,10 @@ sub writeRes {
 ##########################################################
 sub xformObjForThisPage {
 ##########################################################
-  my ($elObje, $pagenumber) = ($_[0], $_[1]);
+  my ($objectContent, $pagenumber) = ($_[0], $_[1]);
   my ($vector, @pageObj, @pageObjBackup, $pageAccumulator);
 
-  return 0 unless $elObje =~ m'/Kids\s*\[([^\]]+)'s;
+  return 0 unless $objectContent =~ m'/Kids\s*\[([^\]]+)'s;
   $vector = $1;
 
   $pageAccumulator = 0;
@@ -668,12 +660,12 @@ sub xformObjForThisPage {
     @pageObjBackup = @pageObj;
     undef @pageObj;
     for (@pageObjBackup) {
-      $elObje = getObject($_);
-      if ( $elObje =~ m'/Count\s+(\d+)'s ) {
+      $objectContent = getObjectContent($_);
+      if ( $objectContent =~ m'/Count\s+(\d+)'s ) {
         if ( ( $pageAccumulator + $1 ) < $pagenumber ) {
           $pageAccumulator += $1;
         } else {
-          $vector = $1 if $elObje =~ m'/Kids\s*\[([^\]]+)'s ;
+          $vector = $1 if $objectContent =~ m'/Kids\s*\[([^\]]+)'s ;
           push @pageObj, $1 while $vector =~ m'(\d+)\s+\d+\s+R'gs;
           last;
         }
@@ -683,30 +675,30 @@ sub xformObjForThisPage {
       last if $pageAccumulator == $pagenumber;
     }
   }
-  return $elObje;
+  return $objectContent;
 }
 
 
 ##########################################################
-sub getResources {
+sub getPageResources {
 ##########################################################
-  my $obj = $_[0];
+  my $objContent = $_[0];
   my ($resources, $formCont);
 
   # Assume all input PDF pages have the same dimensions as first MediaBox found:
   if (! @GformBox) {
-    if ( $obj =~ m'MediaBox\s*\[\s*([\S]+)\s+([\S]+)\s+([\S]+)\s+([\S]+)\s*\]'s ) {
+    if ($objContent =~ m'MediaBox\s*\[\s*([\S]+)\s+([\S]+)\s+([\S]+)\s+([\S]+)\s*\]'s) {
       @GformBox = ($1, $2, $3, $4);
     }
   }
 
-  if ( $obj =~ m'/Contents\s+(\d+)'s ) {
+  if ( $objContent =~ m'/Contents\s+(\d+)'s ) {
     $formCont = $1;
-  } elsif ( $obj =~ m'/Contents\s*\[\s*(\d+)\s+\d+\s+R\s*\]'s ) {
+  } elsif ( $objContent =~ m'/Contents\s*\[\s*(\d+)\s+\d+\s+R\s*\]'s ) {
     $formCont = $1;
   }
 
-  $resources = getResourcesFromObj($obj);
+  $resources = getResourcesFromObj($objContent);
 
   return ($resources, $formCont);
 }
@@ -715,17 +707,17 @@ sub getResources {
 ##########################################################
 sub getResourcesFromObj {
 ##########################################################
-  my $obj = $_[0];
+  my $objContent = $_[0];
   my $resources;
 
-  if ( $obj =~ m'^(.+/Resources)'s ) {
-    return $1 if $obj =~ m'Resources(\s+\d+\s+\d+\s+R)'s; # Reference (95%)
+  if ( $objContent =~ m'^(.+/Resources)'s ) {
+    return $1 if $objContent =~ m'Resources\s+(\d+\s+\d+\s+R)'s; # Reference (95%)
     # The resources are a dictionary. The whole is copied (morfologia.pdf):
     my $k;
-    ( undef, $obj ) = split /\/Resources/, $obj;
-    $obj =~ s/<</#<</gs;
-    $obj =~ s/>>/>>#/gs;
-    for ( split /#/, $obj ) {
+    ( undef, $objContent ) = split /\/Resources/, $objContent;
+    $objContent =~ s/<</#<</gs;
+    $objContent =~ s/>>/>>#/gs;
+    for ( split /#/, $objContent ) {
       if ( m'\S's ) {
         $resources .= $_;
         ++$k if m'<<'s;
@@ -742,7 +734,7 @@ sub getResourcesFromObj {
 sub openInputFile {
 ##########################################################
   $GinFile = $_[0];
-  my ( $elObje, $inputPageSize, $c );
+  my ( $objectContent, $inputPageSize, $c );
 
   open( $IN_FILE, q{<}, $GinFile )
     or die "[!] Couldn't open '${GinFile}'.\n";
@@ -752,18 +744,17 @@ sub openInputFile {
   return 0 if $c ne "%PDF-";
 
   # Find root
-  $Groot = getRootAndMapGobjects();
-  return 0 unless $Groot > 0;
-
+  $GrootNr = getRootAndMapGobjects();
+  return 0 unless $GrootNr > 0;
   # Find input page size:
   $inputPageSize = getInputPageDimensions();
 
   # Find pages
-  return 0 unless eval { $elObje = getObject($Groot); 1; };
+  return 0 unless eval { $objectContent = getObjectContent($GrootNr); 1; };
 
-  if ( $elObje =~ m'/Pages\s+(\d+)\s+\d+\s+R's ) {
-    $elObje = getObject($1);
-    return ($1, $inputPageSize) if $elObje =~ m'/Count\s+(\d+)'s;
+  if ( $objectContent =~ m'/Pages\s+(\d+)\s+\d+\s+R's ) {
+    $objectContent = getObjectContent($1);
+    return ($1, $inputPageSize) if $objectContent =~ m'/Count\s+(\d+)'s;
   }
   return 0;
 }
@@ -776,13 +767,12 @@ sub addSizeToGObjects {
   # Objects are sorted numerically (<=>) and in reverse order ($b $a)
   # according to their offset in the file: last first
   my @offset = sort { $GObjects{$b} <=> $GObjects{$a} } keys %GObjects;
-
   my $pos;
 
   for (@offset) {
     $pos = $GObjects{$_};
     $size -= $pos;
-    $GObjects{$_} = [ $pos, $size ]; # if ! m'^xref';
+    $GObjects{$_} = [ $pos, $size ];
     $size = $pos;
   }
 }
