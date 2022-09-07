@@ -1,5 +1,8 @@
 Revision history for Perl module and script App::paperback.
 
+1.17  Wed Sep 7 15:00:00 2022
+	- Improve page size recognition on modern PDF files
+
 1.16  Wed Sep 7 09:00:00 2022
 	- Clearer variable and sub names
 

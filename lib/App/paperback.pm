@@ -3,7 +3,7 @@ package App::paperback;
 use v5.10;
 use strict;
 # use warnings;
-our $VERSION = "1.16";
+our $VERSION = "1.17";
 
 my ($GinFile, $GpageObjNr, $GrootNr, $Gpos, $GobjNr, $Gstream, $GoWid, $GoHei);
 my (@Gkids, @Gcounts, @GformBox, @Gobject, @Gparents, @Gto_be_created);
@@ -561,14 +561,16 @@ sub getInputPageDimensions {
 ##########################################################
   # Find root:
   my $objectContent = getObjectContent($GrootNr);
-
+  
   # Find pages:
   return "unknown" unless $objectContent =~ m'/Pages\s+(\d+)\s+\d+\s+R's;
-  $objectContent = getObjectContent($1);
 
-  $objectContent = xformObjForThisPage($objectContent, 1);
+  $objectContent = getObjectContent($1);
+  $objectContent = xformObjForThisPage($objectContent, 1)
+    unless $objectContent =~ m'MediaBox's;
   (undef, undef) = getPageResources( $objectContent );
-  return 0 if ! defined $GformBox[2] or ! defined $GformBox[3];
+  return "unknown" if ! defined $GformBox[2] or ! defined $GformBox[3];
+
   my $multi = int($GformBox[2]) * int($GformBox[3]);
   my $measuresInMm = int($GformBox[2] / 72 * 25.4) . " x "
     . int($GformBox[3] / 72 * 25.4) . " mm";
@@ -687,8 +689,14 @@ sub getPageResources {
 
   # Assume all input PDF pages have the same dimensions as first MediaBox found:
   if (! @GformBox) {
-    if ($objContent =~ m'MediaBox\s*\[\s*([\S]+)\s+([\S]+)\s+([\S]+)\s+([\S]+)\s*\]'s) {
-      @GformBox = ($1, $2, $3, $4);
+    for ($objContent) {
+      if (m'MediaBox\s*\[\s*([\S]+)\s+([\S]+)\s+([\S]+)\s+([\S]+)\s*\]'s) {
+        @GformBox = ($1, $2, $3, $4);
+      } elsif (m'MediaBox\s*(\d+)\s+\d+\s+R\b's) { # Size to be found in reference
+        my $ref = getObjectContent($1);
+        @GformBox = ($1, $2, $3, $4)
+          if ($ref =~ m'\[\s*([\S]+)\s+([\S]+)\s+([\S]+)\s+([\S]+)\s*\]'s);
+      }
     }
   }
 
@@ -731,10 +739,24 @@ sub getResourcesFromObj {
 
 
 ##########################################################
+sub getInputPageCount {
+##########################################################  
+  my ($objectContent, $inputPageCount);
+
+  return 0 unless eval { $objectContent = getObjectContent($GrootNr); 1; };
+  if ( $objectContent =~ m'/Pages\s+(\d+)\s+\d+\s+R's ) {
+    $objectContent = getObjectContent($1);
+    return $1 if $objectContent =~ m'/Count\s+(\d+)'s;
+  }
+  return 0;
+}
+
+
+##########################################################
 sub openInputFile {
 ##########################################################
   $GinFile = $_[0];
-  my ( $objectContent, $inputPageSize, $c );
+  my ( $objectContent, $inputPageSize, $inputPageCount, $c );
 
   open( $IN_FILE, q{<}, $GinFile )
     or die "[!] Couldn't open '${GinFile}'.\n";
@@ -746,17 +768,10 @@ sub openInputFile {
   # Find root
   $GrootNr = getRootAndMapGobjects();
   return 0 unless $GrootNr > 0;
-  # Find input page size:
+
   $inputPageSize = getInputPageDimensions();
-
-  # Find pages
-  return 0 unless eval { $objectContent = getObjectContent($GrootNr); 1; };
-
-  if ( $objectContent =~ m'/Pages\s+(\d+)\s+\d+\s+R's ) {
-    $objectContent = getObjectContent($1);
-    return ($1, $inputPageSize) if $objectContent =~ m'/Count\s+(\d+)'s;
-  }
-  return 0;
+  $inputPageCount = getInputPageCount();
+  return ($inputPageCount, $inputPageSize);
 }
 
 
