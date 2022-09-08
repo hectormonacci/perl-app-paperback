@@ -1,5 +1,9 @@
 Revision history for Perl module and script App::paperback.
 
+1.21  Thu Sep 8 21:00:00 2022
+	- Correct output paper size for QuarterLegal input
+	- Made test in for loop both simpler and warning-free
+
 1.20  Thu Sep 8 15:00:00 2022
 	- Add processing for input page sizes Letter and A4
 

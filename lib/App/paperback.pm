@@ -3,7 +3,7 @@ package App::paperback;
 use v5.10;
 use strict;
 # use warnings;
-our $VERSION = "1.20";
+our $VERSION = "1.21";
 
 my ($GinFile, $GpageObjNr, $GrootNr, $Gpos, $GobjNr, $Gstream, $GoWid, $GoHei);
 my (@Gkids, @Gcounts, @GmediaBox, @Gobject, @Gparents, @Gto_be_created);
@@ -12,7 +12,7 @@ my (%GpageXObject, %GObjects, %Gpaper);
 my $cr = '\s*(?:\015|\012|(?:\015\012))';
 
 # ISO 216 paper sizes in pt (four decimals will do):
-my $JH = 1190.5500; # [J] A3 ~ 420 mm (H)
+my $JH = 1190.5512; # [J] A3 ~ 420 mm (H)
 my $JW = 841.8898;  # [J] A3 ~ 297 mm (W)
 my $AH = $JW;       # [A] A4 ~ 297 mm (H)
 my $AW = 595.2756;  # [A] A4 ~ 210 mm (W)
@@ -42,16 +42,17 @@ my $KW =  $DH; # [K] US Tabloid (W)
 
 # Paper surfaces in square pts (expressed as HxW in points):
 %Gpaper = (
-	QuarterLetter => $FH*$FW, # 121_176
-	A6            => $CH*$CW, # 124_867…
-	QuarterLegal  => $IH*$IW, # 154_224
-	HalfLetter    => $EH*$EW, # 242_352
-	A5            => $BH*$BW, # 249_735…
-	HalfLegal     => $HH*$HW, # 308_448
-	Letter        => $DH*$DW, # 484_704
-	A4            => $AH*$AW, # 501_156…
-	Legal         => $GH*$GW, # 616_896
-	Tabloid       => $KH*$KW, # 969_408
+	QuarterLetter => $FH*$FW, # =   121_176
+	A6            => $CH*$CW, # ~   124_867
+	QuarterLegal  => $IH*$IW, # =   154_224
+	HalfLetter    => $EH*$EW, # =   242_352
+	A5            => $BH*$BW, # ~   249_735
+	HalfLegal     => $HH*$HW, # =   308_448
+	Letter        => $DH*$DW, # =   484_704
+	A4            => $AH*$AW, # ~   501_156
+	Legal         => $GH*$GW, # =   616_896
+	Tabloid       => $KH*$KW, # =   969_408
+	A3            => $JH*$JW, # ~ 1_002_312
 );
 
 # Page reordering and position offset schemas for "4 up":
@@ -401,7 +402,8 @@ sub writeEndNode {
   my $si = $#Gparents;         # index   of the last element
 
   my $min = defined $Gparents[0] ? 0 : 1;
-  for ( my $i = $min ; $Gparents[$i] ne $endNode ; ++$i ) {
+  # for ( my $i = $min ; $Gparents[$i] ne $endNode; ++$i ) {
+  for ( my $i = $min; $i < $si; ++$i ) {
     if ( defined $Gparents[$i] ) { # Only defined if there are kids
       # Find parent of current parent:
       my $node;
@@ -604,13 +606,14 @@ sub getInputPageDimensions {
     if (alike($_, $Gpaper{QuarterLetter})) {$GoWid = $DW; $GoHei = $DH; return "QT"};
     if (alike($_, $Gpaper{A6}))            {$GoWid = $AW; $GoHei = $AH; return "A6"};
     if (alike($_, $Gpaper{HalfLetter}))    {$GoWid = $DW; $GoHei = $DH; return "HT"};
-    if (alike($_, $Gpaper{QuarterLegal}))  {$GoWid = $DW; $GoHei = $DH; return "QG"};
+    if (alike($_, $Gpaper{QuarterLegal}))  {$GoWid = $GW; $GoHei = $GH; return "QG"};
     if (alike($_, $Gpaper{A5}))            {$GoWid = $AW; $GoHei = $AH; return "A5"};
     if (alike($_, $Gpaper{HalfLegal}))     {$GoWid = $GW; $GoHei = $GH; return "HG"};
     if (alike($_, $Gpaper{Letter}))        {$GoWid = $KW; $GoHei = $KH; return "LT"};
     if (alike($_, $Gpaper{A4}))            {$GoWid = $JW; $GoHei = $JH; return "A4"};
     if (alike($_, $Gpaper{Legal}))         {return "USlegal, ${measuresInMm}"};
     if (alike($_, $Gpaper{Tabloid}))       {return "UStabloid, ${measuresInMm}"};
+    if (alike($_, $Gpaper{A3}))            {return "A3, ${measuresInMm}"};
   }
   return "unknown, ${measuresInMm}";
 }

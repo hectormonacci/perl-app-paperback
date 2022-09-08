@@ -32,7 +32,7 @@ Options:
 
 =head1 VERSION
 
-Version 1.20
+Version 1.21
 
 =head1 DESCRIPTION
 
@@ -84,16 +84,16 @@ duplex 'long-edge-flip' printing.
 1. Which schema series (4up or 2up) is used depends on input PDF page
 size. For page sizes A6 (105 x 148 mm), Quarter Letter (4.25 x 5.5 in)
 and Quarter Legal (4.25 x 7 in), a 4up schema is used. For page sizes A5
-(148 x 210 mm), Half Letter (5.5 x 8.5 in) and Half Legal (7 x 8.5 in in),
-a 2up schema is used. For page size Letter (8.5 x 11 in), a 2up schema is
-used.
+(148 x 210 mm), Half Letter (5.5 x 8.5 in), Half Legal (7 x 8.5 in),
+Letter (8.5 x 11 in), and A4 (210 x 297 mm), a 2up schema is used.
 
 2. What page size is used for the output PDF depends on input size page.
 For input pages of size A6 or A5, the output PDF pages are A4 (210 x 297 mm);
 for input pages of size Quarter Letter or Half Letter, the output PDF pages
 are Letter (8.5 x 11 in); for input pages of size Quarter Legal or Half Legal,
 the output PDF pages are Legal (8.5 x 14 in); for input pages of size Letter,
-the output PDF pages are Tabloid (11 x 17 in).
+the output PDF pages are Tabloid (11 x 17 in); for input pages of size A4,
+the output PDF pages are A3 (297 x 420 mm).
 
 3. How many signatures are produced depends on the amount of input pages
 to be processed. Recto-verso (or duplex) printing is always assumed. Maximum
