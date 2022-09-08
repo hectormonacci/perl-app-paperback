@@ -1,5 +1,8 @@
 Revision history for Perl module and script App::paperback.
 
+1.19  Thu Sep 8 09:00:00 2022
+	- Fix bug in output paper size determination
+
 1.18  Wed Sep 7 21:00:00 2022
 	- Replace paper size constants by calculations and a hash
 

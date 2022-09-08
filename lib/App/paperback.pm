@@ -3,7 +3,7 @@ package App::paperback;
 use v5.10;
 use strict;
 # use warnings;
-our $VERSION = "1.18";
+our $VERSION = "1.19";
 
 my ($GinFile, $GpageObjNr, $GrootNr, $Gpos, $GobjNr, $Gstream, $GoWid, $GoHei);
 my (@Gkids, @Gcounts, @GmediaBox, @Gobject, @Gparents, @Gto_be_created);
@@ -11,7 +11,7 @@ my (%GpageXObject, %GObjects, %Gpaper);
 
 my $cr = '\s*(?:\015|\012|(?:\015\012))';
 
-# ISO 216 paper sizes in pt:
+# ISO 216 paper sizes in pt (four decimals will do):
 my $AH = 841.8898; # [A] A4 ~ 297 mm (H)
 my $AW = 595.2756; # [A] A4 ~ 210 mm (W)
 my $BH = $AW;      # [B] A5 ~ 210 mm (H)
@@ -37,15 +37,17 @@ my $IH =  $HW; # [I] US Legal Quarter (H)
 my $IW =  $FW; # [I] US Legal Quarter (W)
 
 # Paper surfaces in square pts (expressed as HxW in points):
-$Gpaper{"QuarterLetter"} = $FH*$FW; # 121_176
-$Gpaper{"A6"}            = $CH*$CW; # 124_867…
-$Gpaper{"QuarterLegal"}  = $IH*$IW; # 154_224
-$Gpaper{"HalfLetter"}    = $EH*$EW; # 242_352
-$Gpaper{"A5"}            = $BH*$BW; # 249_735…
-$Gpaper{"HalfLegal"}     = $HH*$HW; # 308_448
-$Gpaper{"Letter"}        = $DH*$DW; # 484_704
-$Gpaper{"A4"}            = $AH*$AW; # 501_156…
-$Gpaper{"Legal"}         = $GH*$GW; # 616_896
+%Gpaper = (
+	QuarterLetter => $FH*$FW, # 121_176
+	A6            => $CH*$CW, # 124_867…
+	QuarterLegal  => $IH*$IW, # 154_224
+	HalfLetter    => $EH*$EW, # 242_352
+	A5            => $BH*$BW, # 249_735…
+	HalfLegal     => $HH*$HW, # 308_448
+	Letter        => $DH*$DW, # 484_704
+	A4            => $AH*$AW, # 501_156…
+	Legal         => $GH*$GW, # 616_896
+);
 
 # Page reordering and position offset schemas for "4 up":
 my @P_4UP_13PLUS = (16,1,13,4,2,15,3,14,12,5,9,8,6,11,7,10);
@@ -78,7 +80,7 @@ my ( $IN_FILE, $OUT_FILE );
 sub main {
 ##########################################################
   my $input = $ARGV[0];
-  my $inpPgNum; my $inpPgSize;
+  my ($inpPgNum, $inpPgSize);
   my $numPagImposed = 0;
   my $sayUsage = "Usage: paperback file.pdf (will produce 'file-paperback.pdf').";
   my $sayVersion = "This is paperback v${VERSION}, (c) 2022 Hector M. Monacci.";
@@ -421,7 +423,7 @@ sub calcRotateMatrix {
 
   if ($rotate) {
     my $upperX = 0; my $upperY = 0;
-    my $radian = sprintf( "%.6f", $rotate / 57.2957795 );  # alike.
+    my $radian = sprintf( "%.6f", $rotate / 57.2957795 );  # approx.
     my $Cos    = sprintf( "%.6f", cos($radian) );
     my $Sin    = sprintf( "%.6f", sin($radian) );
     my $negSin = $Sin * -1;
@@ -461,7 +463,6 @@ sub getRootAndMapGobjects {
   # stat[7] = filesize
   die "[!] Invalid XREF, aborting.\n" if $xref > (stat($GinFile))[7];
   populateGobjects($xref);
-  return $GrootNr if defined $GrootNr;
   $tempRoot = getRootFromTraditionalXrefSection();
   return 0 unless $tempRoot; # No Root object in ${GinFile}, aborting
   return $tempRoot;
@@ -579,20 +580,20 @@ sub getInputPageDimensions {
   (undef, undef) = getPageResources( $objectContent );
   return "unknown" if ! defined $GmediaBox[2] or ! defined $GmediaBox[3];
 
-  my $surface = int($GmediaBox[2]) * int($GmediaBox[3]);
+  my $surface = $GmediaBox[2]*$GmediaBox[3];
   my $measuresInMm = int($GmediaBox[2] / 72 * 25.4) . " x "
     . int($GmediaBox[3] / 72 * 25.4) . " mm";
 
   for ($surface) {
-    if (alike($_, $Gpaper{"QuarterLetter"})) {$GoWid = $DW; $GoHei = $DH; return "QT"};
-    if (alike($_, $Gpaper{"A6"}))            {$GoWid = $AW; $GoHei = $AH; return "A6"};
-    if (alike($_, $Gpaper{"HalfLetter"}))    {$GoWid = $GW; $GoHei = $GH; return "QG"};
-    if (alike($_, $Gpaper{"QuarterLegal"}))  {$GoWid = $DW; $GoHei = $DH; return "HT"};
-    if (alike($_, $Gpaper{"A5"}))            {$GoWid = $AW; $GoHei = $AH; return "A5"};
-    if (alike($_, $Gpaper{"HalfLegal"}))     {$GoWid = $GW; $GoHei = $GH; return "HG"};
-    if (alike($_, $Gpaper{"Letter"}))        {return "USletter, ${measuresInMm}"};
-    if (alike($_, $Gpaper{"A4"}))            {return "A4, ${measuresInMm}"};
-    if (alike($_, $Gpaper{"Legal"}))         {return "USlegal, ${measuresInMm}"};
+    if (alike($_, $Gpaper{QuarterLetter})) {$GoWid = $DW; $GoHei = $DH; return "QT"};
+    if (alike($_, $Gpaper{A6}))            {$GoWid = $AW; $GoHei = $AH; return "A6"};
+    if (alike($_, $Gpaper{HalfLetter}))    {$GoWid = $DW; $GoHei = $DH; return "HT"};
+    if (alike($_, $Gpaper{QuarterLegal}))  {$GoWid = $DW; $GoHei = $DH; return "QG"};
+    if (alike($_, $Gpaper{A5}))            {$GoWid = $AW; $GoHei = $AH; return "A5"};
+    if (alike($_, $Gpaper{HalfLegal}))     {$GoWid = $GW; $GoHei = $GH; return "HG"};
+    if (alike($_, $Gpaper{Letter}))        {return "USletter, ${measuresInMm}"};
+    if (alike($_, $Gpaper{A4}))            {return "A4, ${measuresInMm}"};
+    if (alike($_, $Gpaper{Legal}))         {return "USlegal, ${measuresInMm}"};
   }
   return "unknown, ${measuresInMm}";
 }
@@ -878,7 +879,7 @@ App::paperback - Copy and transform pages from a PDF into a new PDF
  my $newPositionXinPoints   = 100;
  my $newPositionYinPoints   = 150;
  my $rotate                 = 45;
- my ($numPages, $GpaperSize) = 
+ my ($num_Pages, $paper_Size) = 
    App::paperback::openInputFile($inputFile);
  App::paperback::openOutputFile($outputFile);
  App::paperback::newPageInOutputFile();
