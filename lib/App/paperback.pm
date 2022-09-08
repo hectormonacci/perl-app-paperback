@@ -3,7 +3,7 @@ package App::paperback;
 use v5.10;
 use strict;
 # use warnings;
-our $VERSION = "1.19";
+our $VERSION = "1.20";
 
 my ($GinFile, $GpageObjNr, $GrootNr, $Gpos, $GobjNr, $Gstream, $GoWid, $GoHei);
 my (@Gkids, @Gcounts, @GmediaBox, @Gobject, @Gparents, @Gto_be_created);
@@ -12,12 +12,14 @@ my (%GpageXObject, %GObjects, %Gpaper);
 my $cr = '\s*(?:\015|\012|(?:\015\012))';
 
 # ISO 216 paper sizes in pt (four decimals will do):
-my $AH = 841.8898; # [A] A4 ~ 297 mm (H)
-my $AW = 595.2756; # [A] A4 ~ 210 mm (W)
-my $BH = $AW;      # [B] A5 ~ 210 mm (H)
-my $BW = 419.5276; # [B] A5 ~ 148 mm (W)
-my $CH = $BW;      # [C] A6 ~ 148 mm (H)
-my $CW = 297.6378; # [C] A6 ~ 105 mm (W)
+my $JH = 1190.5500; # [J] A3 ~ 420 mm (H)
+my $JW = 841.8898;  # [J] A3 ~ 297 mm (W)
+my $AH = $JW;       # [A] A4 ~ 297 mm (H)
+my $AW = 595.2756;  # [A] A4 ~ 210 mm (W)
+my $BH = $AW;       # [B] A5 ~ 210 mm (H)
+my $BW = 419.5276;  # [B] A5 ~ 148 mm (W)
+my $CH = $BW;       # [C] A6 ~ 148 mm (H)
+my $CW = 297.6378;  # [C] A6 ~ 105 mm (W)
 # + 1 mm (2.8346 pt) to account for rounding in ISO 216 (148+148=296):
 my $CG = 422.3622; # [C] A6 $CH + 1 mm (H)
 my $BG = $CG;      # [B] A5 $BW + 1 mm (W)
@@ -35,6 +37,8 @@ my $HH =  $DW; # [H] US Legal Half (H)
 my $HW =  504; # [H] US Legal Half (W)
 my $IH =  $HW; # [I] US Legal Quarter (H)
 my $IW =  $FW; # [I] US Legal Quarter (W)
+my $KH = 1224; # [K] US Tabloid (H)
+my $KW =  $DH; # [K] US Tabloid (W)
 
 # Paper surfaces in square pts (expressed as HxW in points):
 %Gpaper = (
@@ -47,6 +51,7 @@ my $IW =  $FW; # [I] US Legal Quarter (W)
 	Letter        => $DH*$DW, # 484_704
 	A4            => $AH*$AW, # 501_156…
 	Legal         => $GH*$GW, # 616_896
+	Tabloid       => $KH*$KW, # 969_408
 );
 
 # Page reordering and position offset schemas for "4 up":
@@ -72,6 +77,10 @@ my @X_HT_ON_LT = ($EH,$EH,0,0,$EH,$EH,0,0,$EH,$EH,0,0,$EH,$EH,0,0);
 my @Y_HT_ON_LT = ($EW,0,$DH,$EW,$EW,0,$DH,$EW,$EW,0,$DH,$EW,$EW,0,$DH,$EW);
 my @X_HG_ON_LG = ($HH,$HH,0,0,$HH,$HH,0,0,$HH,$HH,0,0,$HH,$HH,0,0);
 my @Y_HG_ON_LG = ($HW,0,$GH,$HW,$HW,0,$GH,$HW,$HW,0,$GH,$HW,$HW,0,$GH,$HW);
+my @X_LT_ON_TA = ($DH,$DH,0,0,$DH,$DH,0,0,$DH,$DH,0,0,$DH,$DH,0,0);
+my @Y_LT_ON_TA = ($DW,0,$KH,$DW,$DW,0,$KH,$DW,$DW,0,$KH,$DW,$DW,0,$KH,$DW);
+my @X_A4_ON_A3 = ($AH,$AH,0,0,$AH,$AH,0,0,$AH,$AH,0,0,$AH,$AH,0,0);
+my @Y_A4_ON_A3 = ($AW,0,$JH,$AW,$AW,0,$JH,$AW,$AW,0,$JH,$AW,$AW,0,$JH,$AW);
 
 my ( $IN_FILE, $OUT_FILE );
 
@@ -93,8 +102,8 @@ ${sayUsage}
   into signatures, according to its original page size. Input PDF is 
   always assumed to be composed of vertical pages of the same size.
 
-  Input page sizes allowed are A5, A6, Half Letter, Quarter Letter,
-  Half Legal and Quarter Legal. Other sizes give an error message.
+  Input page sizes allowed are A4, A5, A6, Letter, Half Letter, Quarter
+  Letter, Half Legal and Quarter Legal. Other sizes give an error message.
 
   Only PDF v1.4 is supported as input, although many higher-labeled
   PDF files are correctly handled since they are essentially v1.4 PDF
@@ -102,23 +111,28 @@ ${sayUsage}
 
 ISO 216 normalised (international) page sizes:
 
-  Input page sizes A6 (105 x 148 mm) and A5 (148 x 210 mm) produce
-  an output page size of A4 (210 x 297 mm). Four A6 pages will be put
-  on each A4 page, or two A5 pages will be put on each A4 page. 
-  Before that, input pages will be reordered and reoriented so as to
-  produce a final PDF fit for duplex 'long-edge-flip' printing.
+  Input page sizes A6 (105 x 148 mm) and A5 (148 x 210 mm) produce an
+  output page size of A4 (210 x 297 mm). Input page size A4 (210 x 297 mm)
+  produces an output page size of A3 (297 x 420 mm). Four A6 pages will
+  be put on each A4 page, two A5 pages will be put on each A4 page, or
+  two A4 pages will be put on each A3 page. Before that, input pages will
+  be reordered and reoriented so as to produce a final PDF fit for duplex
+  'long-edge-flip' printing.
 
 ANSI normalised (US) page sizes:
 
   Input page sizes Quarter Letter (4.25 x 5.5 in) and Half Letter (5.5
   x 8.5 in) produce a Letter output page size (8.5 x 11 in). Input
   page sizes Quarter Legal (4.25 x 7 in) and Half Legal (7 x 8.5 in)
-  produce a Legal output page size (8.5 x 14 in). Four Quarter-Letter
-  pages will be put on each Letter page, two Half-Letter pages will be
-  put on each Letter page, four Quarter-Legal pages will be put on each
-  Legal page, or two Half-Legal pages will be put on each Legal page.
-  Before that, input pages will be reordered and reoriented so as to 
-  produce a final PDF fit for duplex 'long-edge-flip' printing.
+  produce a Legal output page size (8.5 x 14 in). Input page size Letter
+  (8.5 x 11 in) produces a Tabloid output page size (11 x 17 in). 
+
+  Four Quarter-Letter pages will be put on each Letter page, two Half-Letter
+  pages will be put on each Letter page, four Quarter-Legal pages will be
+  put on each Legal page, two Half-Legal pages will be put on each Legal page,
+  or two Letter pages will be put on each Tabloid page. Before that, input 
+  pages will be reordered and reoriented so as to produce a final PDF fit for
+  duplex 'long-edge-flip' printing.
 
 For further details, please try 'perldoc paperback'.
 
@@ -145,6 +159,8 @@ END_MESSAGE
     elsif ($_ eq "QG") { $pgPerOutputPage = 4; @x = @X_QG_ON_LG; @y = @Y_QG_ON_LG; }
     elsif ($_ eq "HT") { $pgPerOutputPage = 2; @x = @X_HT_ON_LT; @y = @Y_HT_ON_LT; }
     elsif ($_ eq "HG") { $pgPerOutputPage = 2; @x = @X_HG_ON_LG; @y = @Y_HG_ON_LG; }
+    elsif ($_ eq "LT") { $pgPerOutputPage = 2; @x = @X_LT_ON_TA; @y = @Y_LT_ON_TA; }
+    elsif ($_ eq "A4") { $pgPerOutputPage = 2; @x = @X_A4_ON_A3; @y = @Y_A4_ON_A3; }
     else {die "[!] Bad page size (${inpPgSize}). Try 'paperback -h' for more info.\n"}
   }
 
@@ -591,9 +607,10 @@ sub getInputPageDimensions {
     if (alike($_, $Gpaper{QuarterLegal}))  {$GoWid = $DW; $GoHei = $DH; return "QG"};
     if (alike($_, $Gpaper{A5}))            {$GoWid = $AW; $GoHei = $AH; return "A5"};
     if (alike($_, $Gpaper{HalfLegal}))     {$GoWid = $GW; $GoHei = $GH; return "HG"};
-    if (alike($_, $Gpaper{Letter}))        {return "USletter, ${measuresInMm}"};
-    if (alike($_, $Gpaper{A4}))            {return "A4, ${measuresInMm}"};
+    if (alike($_, $Gpaper{Letter}))        {$GoWid = $KW; $GoHei = $KH; return "LT"};
+    if (alike($_, $Gpaper{A4}))            {$GoWid = $JW; $GoHei = $JH; return "A4"};
     if (alike($_, $Gpaper{Legal}))         {return "USlegal, ${measuresInMm}"};
+    if (alike($_, $Gpaper{Tabloid}))       {return "UStabloid, ${measuresInMm}"};
   }
   return "unknown, ${measuresInMm}";
 }

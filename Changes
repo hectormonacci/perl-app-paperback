@@ -1,5 +1,8 @@
 Revision history for Perl module and script App::paperback.
 
+1.20  Thu Sep 8 15:00:00 2022
+	- Add processing for input page sizes Letter and A4
+
 1.19  Thu Sep 8 09:00:00 2022
 	- Fix bug in output paper size determination
 
