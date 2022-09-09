@@ -3,7 +3,7 @@ package App::paperback;
 use v5.10;
 use strict;
 # use warnings;
-our $VERSION = "1.22";
+our $VERSION = "1.23";
 
 my ($GinFile, $GpageObjNr, $GrootNr, $Gpos, $GobjNr, $Gstream, $GoWid, $GoHei, $GmaxPages);
 my (@Gkids, @Gcounts, @GmediaBox, @Gobject, @Gparents, @Gto_be_created);
@@ -827,8 +827,8 @@ sub update_references_and_populate_to_be_created {
 ##########################################################
   # $xform translates an old object reference to a new one
   # and populates a table with what objects must be created
+  state %known;
   my $xform = sub {
-  	state %known;
     return $known{$1} if exists $known{$1};
     push @Gto_be_created, [ $1, ++$GobjNr ];
     return $known{$1} = $GobjNr;

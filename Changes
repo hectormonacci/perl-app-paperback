@@ -1,5 +1,8 @@
 Revision history for Perl module and script App::paperback.
 
+1.23  Fri Sep 9 10:00:00 2022
+	- Fix bug in 'state %known' (v1.22) that made PDF bigger than needed
+
 1.22  Fri Sep 9 09:00:00 2022
 	- Add test and early die in case a nonexistant page is requested
 
