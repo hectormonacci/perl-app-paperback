@@ -1,5 +1,8 @@
 Revision history for Perl module and script App::paperback.
 
+1.22  Fri Sep 9 09:00:00 2022
+	- Add test and early die in case a nonexistant page is requested
+
 1.21  Thu Sep 8 21:00:00 2022
 	- Correct output paper size for QuarterLegal input
 	- Made test in for loop both simpler and warning-free

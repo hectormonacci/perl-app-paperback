@@ -3,9 +3,9 @@ package App::paperback;
 use v5.10;
 use strict;
 # use warnings;
-our $VERSION = "1.21";
+our $VERSION = "1.22";
 
-my ($GinFile, $GpageObjNr, $GrootNr, $Gpos, $GobjNr, $Gstream, $GoWid, $GoHei);
+my ($GinFile, $GpageObjNr, $GrootNr, $Gpos, $GobjNr, $Gstream, $GoWid, $GoHei, $GmaxPages);
 my (@Gkids, @Gcounts, @GmediaBox, @Gobject, @Gparents, @Gto_be_created);
 my (%GpageXObject, %GObjects, %Gpaper);
 
@@ -100,7 +100,7 @@ ${sayUsage}
 
   All pages in the input PDF file will be imposed on a new PDF with
   bigger paper size, ready to be duplex-printed, folded and put together
-  into signatures, according to its original page size. Input PDF is 
+  into signatures, according to its original page size. Input PDF is
   always assumed to be composed of vertical pages of the same size.
 
   Input page sizes allowed are A4, A5, A6, Letter, Half Letter, Quarter
@@ -126,12 +126,12 @@ ANSI normalised (US) page sizes:
   x 8.5 in) produce a Letter output page size (8.5 x 11 in). Input
   page sizes Quarter Legal (4.25 x 7 in) and Half Legal (7 x 8.5 in)
   produce a Legal output page size (8.5 x 14 in). Input page size Letter
-  (8.5 x 11 in) produces a Tabloid output page size (11 x 17 in). 
+  (8.5 x 11 in) produces a Tabloid output page size (11 x 17 in).
 
   Four Quarter-Letter pages will be put on each Letter page, two Half-Letter
   pages will be put on each Letter page, four Quarter-Legal pages will be
   put on each Legal page, two Half-Legal pages will be put on each Legal page,
-  or two Letter pages will be put on each Tabloid page. Before that, input 
+  or two Letter pages will be put on each Tabloid page. Before that, input
   pages will be reordered and reoriented so as to produce a final PDF fit for
   duplex 'long-edge-flip' printing.
 
@@ -172,16 +172,16 @@ END_MESSAGE
     $rot_extra = 0;
     for ($inpPgNum) {
       if    ($_ >= 13) { @p = @P_4UP_13PLUS; }
-      elsif ($_ >= 9 ) { @p = @P_4UP_9PLUS;  } 
-      elsif ($_ >= 5 ) { @p = @P_4UP_5PLUS;  } 
+      elsif ($_ >= 9 ) { @p = @P_4UP_9PLUS;  }
+      elsif ($_ >= 5 ) { @p = @P_4UP_5PLUS;  }
       else             { @p = @P_4UP_1PLUS;  }
     }
   } else {
     $rot_extra = 90;
     for ($inpPgNum) {
-      if    ($_ >= 13) { @p = @P_2UP_13PLUS; } 
-      elsif ($_ >= 9 ) { @p = @P_2UP_9PLUS;  } 
-      elsif ($_ >= 5 ) { @p = @P_2UP_5PLUS;  } 
+      if    ($_ >= 13) { @p = @P_2UP_13PLUS; }
+      elsif ($_ >= 9 ) { @p = @P_2UP_9PLUS;  }
+      elsif ($_ >= 5 ) { @p = @P_2UP_5PLUS;  }
       else             { @p = @P_2UP_1PLUS;  }
     }
   }
@@ -235,10 +235,12 @@ sub copyPageFromInputToOutput {
   ++$formNr;
 
   my $name = "Fm${formNr}";
-  my $refNr = getPage( $pagenumber );
-  die "[!] Page ${pagenumber} in ${GinFile} can't be used. Concatenate streams!\n" 
+  my ($formRes, $formCont) = getPage($pagenumber);
+  my $refNr = writeRes($formRes, $formCont);
+  die "[!] Page ${pagenumber} in ${GinFile} can't be used. Concatenate streams!\n"
     if !defined $refNr;
   die "[!] Page ${pagenumber} doesn't exist in file ${GinFile}.\n" if !$refNr;
+  writePageObjectsToOutputFile();
 
   $Gstream .= "q\n" . calcRotateMatrix($x, $y, $rotate) ."\n/Gs0 gs\n/${name} Do\nQ\n";
   $GpageXObject{$name} = $refNr;
@@ -458,7 +460,7 @@ sub getRootAndMapGobjects {
 
   sysseek $IN_FILE, -150, 2;
   sysread $IN_FILE, $buf, 200;
-  die "[!] File ${GinFile} is encrypted, cannot be used, aborting.\n"
+  die "[!] File ${GinFile} is encrypted, cannot be used. Aborting.\n"
     if $buf =~ m'Encrypt';
 
   if ($buf =~ m'/Prev\s+\d') { # "Versioned" PDF file (several xref sections)
@@ -477,9 +479,9 @@ sub getRootAndMapGobjects {
   } else {
     return 0;
   }
-  
+
   # stat[7] = filesize
-  die "[!] Invalid XREF, aborting.\n" if $xref > (stat($GinFile))[7];
+  die "[!] Invalid XREF. Aborting.\n" if $xref > (stat($GinFile))[7];
   populateGobjects($xref);
   $tempRoot = getRootFromTraditionalXrefSection();
   return 0 unless $tempRoot; # No Root object in ${GinFile}, aborting
@@ -521,7 +523,7 @@ sub populateGobjects {
   } else {
     die "[!] File '${GinFile}' has a malformed xref table.\n";
   }
-  
+
   addSizeToGObjects();
   return;
 }
@@ -542,12 +544,12 @@ sub getRootFromTraditionalXrefSection {
 
 
 ##########################################################
-sub getObjectContent {
+sub getContentOfObjectNr {
 ##########################################################
   my $index = $_[0];
 
   return 0 if (! defined $GObjects{$index});   # A non-1.4 PDF
-  my ($buf, $buf2);
+  my $buf;
   my ($offset, $size) = @{ $GObjects{$index} };
   sysseek $IN_FILE, $offset, 0;
   sysread $IN_FILE, $buf, $size;
@@ -556,14 +558,14 @@ sub getObjectContent {
 
 
 ##########################################################
-sub writeToBeCreated {
+sub writePageObjectsToOutputFile {
 ##########################################################
   my ($objectContent, $out_line, $part, $strPos, $old_one, $new_one);
 
   for (@Gto_be_created) {
     $old_one = $_->[0];
     $new_one = $_->[1];
-    $objectContent = getObjectContent($old_one);
+    $objectContent = getContentOfObjectNr($old_one);
     if ( $objectContent =~ m'^(\d+ \d+ obj\s*<<)(.+)(>>\s*stream)'s ) {
       $part = $2;
       $strPos = length($1) + length($2) + length($3);
@@ -571,7 +573,7 @@ sub writeToBeCreated {
       $out_line = "${new_one} 0 obj\n<<${part}>>stream";
       $out_line .= substr( $objectContent, $strPos );
     } else {
-      $objectContent = substr( $objectContent, length($1) ) 
+      $objectContent = substr( $objectContent, length($1) )
         if $objectContent =~ m'^(\d+ \d+ obj\s*)'s;
       update_references_and_populate_to_be_created($objectContent);
       $out_line = "${new_one} 0 obj ${objectContent}";
@@ -588,14 +590,14 @@ sub writeToBeCreated {
 sub getInputPageDimensions {
 ##########################################################
   # Find root:
-  my $objectContent = getObjectContent($GrootNr);
-  
+  my $objectContent = getContentOfObjectNr($GrootNr);
+
   # Find pages:
   return "unknown" unless $objectContent =~ m'/Pages\s+(\d+)\s+\d+\s+R's;
-  $objectContent = getObjectContent($1);
+  $objectContent = getContentOfObjectNr($1);
   $objectContent = xformObjForThisPage($objectContent, 1)
     unless $objectContent =~ m'MediaBox's;
-  (undef, undef) = getPageResources( $objectContent );
+  (undef, undef) = getPageResourcesAndContent( $objectContent );
   return "unknown" if ! defined $GmediaBox[2] or ! defined $GmediaBox[3];
 
   my $surface = $GmediaBox[2]*$GmediaBox[3];
@@ -633,23 +635,20 @@ sub alike {
 sub getPage {
 ##########################################################
   my $pagenumber = $_[0];
-  my ( $reference, $formRes, $formCont );
+  die "[!] Page requested (${pagenumber}) does not exist. Aborting.\n"
+  	if $pagenumber > $GmaxPages;
+  my ($reference, $formRes, $formCont);
 
   # Find root:
-  my $objectContent = getObjectContent($GrootNr);
+  my $objectContent = getContentOfObjectNr($GrootNr);
 
   # Find pages:
-  die "[!] Didn't find Pages section in '${GinFile}', aborting.\n" 
+  die "[!] Didn't find Pages section in '${GinFile}'. Aborting.\n"
     unless $objectContent =~ m'/Pages\s+(\d+)\s+\d+\s+R's;
-  $objectContent = getObjectContent($1);
+  $objectContent = getContentOfObjectNr($1);
   $objectContent = xformObjForThisPage($objectContent, $pagenumber);
-  ($formRes, $formCont) = getPageResources( $objectContent );
-
-  $reference = writeRes($formRes, $formCont);
-
-  writeToBeCreated();
-
-  return $reference;
+  ($formRes, $formCont) = getPageResourcesAndContent($objectContent);
+  return ($formRes, $formCont);
 }
 
 
@@ -658,7 +657,7 @@ sub writeRes {
 ##########################################################
   my ($formRes, $objNr) = ($_[0], $_[1]);
 
-  my $objectContent = getObjectContent($objNr);
+  my $objectContent = getContentOfObjectNr($objNr);
   $objectContent =~ m'^(\d+ \d+ obj\s*<<)(.+)(>>\s*stream)'s;
   my $strPos = length($1) + length($2) + length($3);
   my $newPart = "<</Type/XObject/Subtype/Form/FormType 1/Resources ${formRes}"
@@ -690,8 +689,9 @@ sub xformObjForThisPage {
   while ( $pageAccumulator < $pagenumber ) {
     @pageObjBackup = @pageObj;
     undef @pageObj;
+    last if ! @pageObjBackup; # $pagenumber is > than number of pages in PDF
     for (@pageObjBackup) {
-      $objectContent = getObjectContent($_);
+      $objectContent = getContentOfObjectNr($_);
       if ( $objectContent =~ m'/Count\s+(\d+)'s ) {
         if ( ( $pageAccumulator + $1 ) < $pagenumber ) {
           $pageAccumulator += $1;
@@ -711,7 +711,7 @@ sub xformObjForThisPage {
 
 
 ##########################################################
-sub getPageResources {
+sub getPageResourcesAndContent {
 ##########################################################
   my $objContent = $_[0];
   my ($resources, $formCont);
@@ -722,7 +722,7 @@ sub getPageResources {
       if (m'MediaBox\s*\[\s*([\S]+)\s+([\S]+)\s+([\S]+)\s+([\S]+)\s*\]'s) {
         @GmediaBox = ($1, $2, $3, $4);
       } elsif (m'MediaBox\s*(\d+)\s+\d+\s+R\b's) { # Size to be found in reference
-        my $ref = getObjectContent($1);
+        my $ref = getContentOfObjectNr($1);
         @GmediaBox = ($1, $2, $3, $4)
           if ($ref =~ m'\[\s*([\S]+)\s+([\S]+)\s+([\S]+)\s+([\S]+)\s*\]'s);
       }
@@ -769,15 +769,15 @@ sub getResourcesFromObj {
 
 ##########################################################
 sub getInputPageCount {
-##########################################################  
-  my ($objectContent, $inputPageCount);
+##########################################################
+  my $objectContent;
 
-  return 0 unless eval { $objectContent = getObjectContent($GrootNr); 1; };
+  return 0 unless eval { $objectContent = getContentOfObjectNr($GrootNr); 1; };
   if ( $objectContent =~ m'/Pages\s+(\d+)\s+\d+\s+R's ) {
-    $objectContent = getObjectContent($1);
-    return $1 if $objectContent =~ m'/Count\s+(\d+)'s;
+    $objectContent = getContentOfObjectNr($1);
+    $GmaxPages = $1 if $objectContent =~ m'/Count\s+(\d+)'s;
   }
-  return 0;
+  return $GmaxPages;
 }
 
 
@@ -826,9 +826,9 @@ sub addSizeToGObjects {
 sub update_references_and_populate_to_be_created {
 ##########################################################
   # $xform translates an old object reference to a new one
-  # and populates a table with what must be created
-  state %known;
+  # and populates a table with what objects must be created
   my $xform = sub {
+  	state %known;
     return $known{$1} if exists $known{$1};
     push @Gto_be_created, [ $1, ++$GobjNr ];
     return $known{$1} = $GobjNr;
@@ -899,7 +899,7 @@ App::paperback - Copy and transform pages from a PDF into a new PDF
  my $newPositionXinPoints   = 100;
  my $newPositionYinPoints   = 150;
  my $rotate                 = 45;
- my ($num_Pages, $paper_Size) = 
+ my ($num_Pages, $paper_Size) =
    App::paperback::openInputFile($inputFile);
  App::paperback::openOutputFile($outputFile);
  App::paperback::newPageInOutputFile();
