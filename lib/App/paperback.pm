@@ -3,9 +3,9 @@ package App::paperback;
 use v5.10;
 use strict;
 # use warnings;
-our $VERSION = "1.23";
+our $VERSION = "1.24";
 
-my ($GinFile, $GpageObjNr, $GrootNr, $Gpos, $GobjNr, $Gstream, $GoWid, $GoHei, $GmaxPages);
+my ($GinFile, $GpageObjNr, $GrootNr, $Gpos, $GobjNr, $Gstream, $GoWid, $GoHei);
 my (@Gkids, @Gcounts, @GmediaBox, @Gobject, @Gparents, @Gto_be_created);
 my (%GpageXObject, %GObjects, %Gpaper);
 
@@ -42,17 +42,17 @@ my $KW =  $DH; # [K] US Tabloid (W)
 
 # Paper surfaces in square pts (expressed as HxW in points):
 %Gpaper = (
-	QuarterLetter => $FH*$FW, # =   121_176
-	A6            => $CH*$CW, # ~   124_867
-	QuarterLegal  => $IH*$IW, # =   154_224
-	HalfLetter    => $EH*$EW, # =   242_352
-	A5            => $BH*$BW, # ~   249_735
-	HalfLegal     => $HH*$HW, # =   308_448
-	Letter        => $DH*$DW, # =   484_704
-	A4            => $AH*$AW, # ~   501_156
-	Legal         => $GH*$GW, # =   616_896
-	Tabloid       => $KH*$KW, # =   969_408
-	A3            => $JH*$JW, # ~ 1_002_312
+  QuarterLetter => $FH*$FW, # =   121_176
+  A6            => $CH*$CW, # ~   124_867
+  QuarterLegal  => $IH*$IW, # =   154_224
+  HalfLetter    => $EH*$EW, # =   242_352
+  A5            => $BH*$BW, # ~   249_735
+  HalfLegal     => $HH*$HW, # =   308_448
+  Letter        => $DH*$DW, # =   484_704
+  A4            => $AH*$AW, # ~   501_156
+  Legal         => $GH*$GW, # =   616_896
+  Tabloid       => $KH*$KW, # =   969_408
+  A3            => $JH*$JW, # ~ 1_002_312
 );
 
 # Page reordering and position offset schemas for "4 up":
@@ -242,7 +242,7 @@ sub copyPageFromInputToOutput {
   die "[!] Page ${pagenumber} doesn't exist in file ${GinFile}.\n" if !$refNr;
   writePageObjectsToOutputFile();
 
-  $Gstream .= "q\n" . calcRotateMatrix($x, $y, $rotate) ."\n/Gs0 gs\n/${name} Do\nQ\n";
+  $Gstream .= "q\n". calcRotateMatrix($x, $y, $rotate) ."\n/Gs0 gs\n/${name} Do\nQ\n";
   $GpageXObject{$name} = $refNr;
 
   return;
@@ -264,13 +264,9 @@ sub setInitGrState {
 ##########################################################
 sub createPageResourceDict {
 ##########################################################
-  my $resourceDict = "/ProcSet[/PDF/Text]";
-  if ( %GpageXObject ) {
-    $resourceDict .= "/XObject<<";
-    $resourceDict .= "/$_ $GpageXObject{$_} 0 R" for sort keys %GpageXObject;
-    $resourceDict .= ">>";
-  }
-  $resourceDict .= "/ExtGState<</Gs0 4 0 R>>";
+  my $resourceDict = "/ProcSet[/PDF/Text]/XObject<<";
+    $resourceDict .= "/${_} ${GpageXObject{${_}}} 0 R" for keys %GpageXObject;
+    $resourceDict .= ">>/ExtGState<</Gs0 4 0 R>>";
   return $resourceDict;
 }
 
@@ -326,9 +322,9 @@ sub writePage {
     $Gparents[0] = $GobjNr;
   }
   my $parent = $Gparents[0];
-  my $resourceObject = writePageResourceDict(createPageResourceDict());
+  my $resourceObjectNr = writePageResourceDict(createPageResourceDict());
   writePageStream();
-  writePageResources($parent, $resourceObject);
+  writePageResources($parent, $resourceObjectNr);
   ++$Gcounts[0];
   writePageNodes(8) if $Gcounts[0] > 9;
   return;
@@ -438,8 +434,8 @@ sub writeEndNode {
 ##########################################################
 sub calcRotateMatrix {
 ##########################################################
-  my $rotate = $_[2];
   my $str = "1 0 0 1 ${_[0]} ${_[1]} cm\n";
+  my $rotate = $_[2];
 
   if ($rotate) {
     my $upperX = 0; my $upperY = 0;
@@ -574,7 +570,7 @@ sub writePageObjectsToOutputFile {
       $out_line .= substr( $objectContent, $strPos );
     } else {
       $objectContent = substr( $objectContent, length($1) )
-        if $objectContent =~ m'^(\d+ \d+ obj\s*)'s;
+        if $objectContent =~ m'^(\d+ \d+ obj)\b's;
       update_references_and_populate_to_be_created($objectContent);
       $out_line = "${new_one} 0 obj ${objectContent}";
     }
@@ -597,7 +593,7 @@ sub getInputPageDimensions {
   $objectContent = getContentOfObjectNr($1);
   $objectContent = xformObjForThisPage($objectContent, 1)
     unless $objectContent =~ m'MediaBox's;
-  (undef, undef) = getPageResourcesAndContent( $objectContent );
+  (undef, undef) = parseAsResourcesAndContentRef( $objectContent );
   return "unknown" if ! defined $GmediaBox[2] or ! defined $GmediaBox[3];
 
   my $surface = $GmediaBox[2]*$GmediaBox[3];
@@ -636,8 +632,8 @@ sub getPage {
 ##########################################################
   my $pagenumber = $_[0];
   die "[!] Page requested (${pagenumber}) does not exist. Aborting.\n"
-  	if $pagenumber > $GmaxPages;
-  my ($reference, $formRes, $formCont);
+    if $pagenumber > getInputPageCount();
+  my ($formRes, $formCont);
 
   # Find root:
   my $objectContent = getContentOfObjectNr($GrootNr);
@@ -647,7 +643,7 @@ sub getPage {
     unless $objectContent =~ m'/Pages\s+(\d+)\s+\d+\s+R's;
   $objectContent = getContentOfObjectNr($1);
   $objectContent = xformObjForThisPage($objectContent, $pagenumber);
-  ($formRes, $formCont) = getPageResourcesAndContent($objectContent);
+  ($formRes, $formCont) = parseAsResourcesAndContentRef($objectContent);
   return ($formRes, $formCont);
 }
 
@@ -711,7 +707,7 @@ sub xformObjForThisPage {
 
 
 ##########################################################
-sub getPageResourcesAndContent {
+sub parseAsResourcesAndContentRef {
 ##########################################################
   my $objContent = $_[0];
   my ($resources, $formCont);
@@ -770,14 +766,16 @@ sub getResourcesFromObj {
 ##########################################################
 sub getInputPageCount {
 ##########################################################
+  state $maxPages;
+  return $maxPages if defined $maxPages;
   my $objectContent;
 
   return 0 unless eval { $objectContent = getContentOfObjectNr($GrootNr); 1; };
   if ( $objectContent =~ m'/Pages\s+(\d+)\s+\d+\s+R's ) {
     $objectContent = getContentOfObjectNr($1);
-    $GmaxPages = $1 if $objectContent =~ m'/Count\s+(\d+)'s;
+    $maxPages = $1 if $objectContent =~ m'/Count\s+(\d+)'s;
   }
-  return $GmaxPages;
+  return $maxPages;
 }
 
 
@@ -891,14 +889,16 @@ App::paperback - Copy and transform pages from a PDF into a new PDF
 
 =head1 SYNOPSIS
 
+ #!/usr/bin/env perl
  use strict;
- use App::paperback;
+ use App::paperback qw(openInputFile);
  my $inputFile              = "some-A6-pages.pdf";
  my $outputFile             = "new-A4-pages.pdf";
  my $desiredPage            = 1;
  my $newPositionXinPoints   = 100;
  my $newPositionYinPoints   = 150;
  my $rotate                 = 45;
+
  my ($num_Pages, $paper_Size) =
    App::paperback::openInputFile($inputFile);
  App::paperback::openOutputFile($outputFile);

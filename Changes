@@ -1,5 +1,9 @@
 Revision history for Perl module and script App::paperback.
 
+1.24  Sun Sep 9 00:00:00 2022
+	- Replace global variable with state variable
+	- Avoid useless check for GpageXObject
+
 1.23  Fri Sep 9 10:00:00 2022
 	- Fix bug in 'state %known' (v1.22) that made PDF bigger than needed
 
