@@ -3,7 +3,7 @@ package App::paperback;
 use v5.10;
 use strict;
 # use warnings;
-our $VERSION = "1.25";
+our $VERSION = "1.26";
 
 my ($GinFile, $GpageObjNr, $GrootNr, $Gpos, $GobjNr, $Gstream, $GoWid, $GoHei);
 my (@Gkids, @Gcounts, @GmediaBox, @Gobject, @Gparents, @Gto_be_created);
@@ -451,7 +451,7 @@ sub getRootAndMapGobjects {
 
   sysseek $IN_FILE, -150, 2;
   sysread $IN_FILE, $buf, 200;
-  die "[!] File '${GinFile}'' is encrypted, cannot be used. Aborting.\n"
+  die "[!] File '${GinFile}' is encrypted, cannot be used. Aborting.\n"
     if $buf =~ m'Encrypt';
 
   if ($buf =~ m'/Prev\s+\d') { # "Versioned" PDF file (several xref sections)
@@ -584,8 +584,8 @@ sub setOutputPageDimensionAndSchema {
     unless getPageSizeAndSetMediabox();
 
   my $surface = $GmediaBox[2]*$GmediaBox[3];
-  my $measuresInMm = int($GmediaBox[2] / 72 * 25.4) . " x "
-    . int($GmediaBox[3] / 72 * 25.4) . " mm";
+  my $measuresInMm = 
+    int($GmediaBox[2] / 72 * 25.4) . " x " . int($GmediaBox[3] / 72 * 25.4) . " mm";
 
   for ($surface) {
     if (alike($_, $Gpaper{QuarterLetter})) {$GoWid = $DW; $GoHei = $DH; return "QT"};
@@ -700,7 +700,7 @@ sub getPageSizeAndSetMediabox {
   my $objectContent = getContentOfObjectNr($GrootNr);
 
   # Find pages:
-  return "unknown" unless $objectContent =~ m'/Pages\s+(\d+)\s+\d+\s+R';
+  return 0 unless $objectContent =~ m'/Pages\s+(\d+)\s+\d+\s+R';
   $objectContent = getContentOfObjectNr($1);
   $objectContent = xformObjForThisPage($objectContent, 1)
     unless $objectContent =~ m'MediaBox';
@@ -712,14 +712,17 @@ sub getPageSizeAndSetMediabox {
         @GmediaBox = ($1, $2, $3, $4);
       } elsif (m'MediaBox\s*(\d+)\s+\d+\s+R\b') { # Size to be found in reference
         my $ref = getContentOfObjectNr($1);
-        @GmediaBox = ($1, $2, $3, $4)
-          if ($ref =~ m'\[\s*([\S]+)\s+([\S]+)\s+([\S]+)\s+([\S]+)\s*\]');
+        if ($ref =~ m'\[\s*([\S]+)\s+([\S]+)\s+([\S]+)\s+([\S]+)\s*\]') {
+          @GmediaBox = ($1, $2, $3, $4)
+        } else {
+          return 0; # Meaning "failure"
+        }
       } else {
-        return 0;
+        return 0; # Meaning "failure"
       }
     }
   }
-  return 1;
+  return 1; # Meaning "success"
 }
 
 
@@ -785,7 +788,7 @@ sub getInputPageCount {
 sub openInputFile {
 ##########################################################
   $GinFile = $_[0];
-  my ( $objectContent, $inputPageSize, $inputPageCount, $c );
+  my ( $inputPageSize, $inputPageCount, $c );
   die "[!] File '${GinFile}' is empty.\n" if ! getInputFileWeight();
 
   open($IN_FILE, q{<}, $GinFile) or die "[!] Couldn't open '${GinFile}'.\n";
@@ -829,6 +832,7 @@ sub addSizeToGObjects {
     $GObjects{$_} = [ $pos, $size ];
     $size = $pos;
   }
+  return;
 }
 
 
@@ -841,9 +845,9 @@ sub update_references_and_populate_to_be_created {
   my $xform = sub {
     return $known{$1} if exists $known{$1};
     push @Gto_be_created, [ $1, ++$GobjNr ];
-    return $known{$1} = $GobjNr;
+    $known{$1} = $GobjNr; # implicit return value (faster)
   };
-  $_[0] =~ s/\b(\d+)\s+\d+\s+R\b/&$xform . ' 0 R'/eg;
+  $_[0] =~ s/\b(\d+)\s+\d+\s+R\b/&$xform . " 0 R"/eg;
   return;
 }
 

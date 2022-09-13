@@ -1,5 +1,8 @@
 Revision history for Perl module and script App::paperback.
 
+1.26  Tue Sep 13 09:00:00 2022
+	- General cleaning of syntax and faster xform inner sub
+
 1.25  Mon Sep 12 12:00:00 2022
 	- Deleted redundant check when opening input file
 	- Reformulated size checking
