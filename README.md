@@ -16,4 +16,4 @@ coding style of the module. Let me know if you plan something
 bigger so we can talk it through.
 
 ### Author
-Hector M. Monacci <monacci at cpan dot org>
+Hector M. Monacci <monacci@cpan.org>
