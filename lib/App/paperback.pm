@@ -3,7 +3,8 @@ package App::paperback;
 use v5.10;
 use strict;
 # use warnings;
-our $VERSION = "1.26";
+$^W = 0;
+our $VERSION = "1.27";
 
 my ($GinFile, $GpageObjNr, $GrootNr, $Gpos, $GobjNr, $Gstream, $GoWid, $GoHei);
 my (@Gkids, @Gcounts, @GmediaBox, @Gobject, @Gparents, @Gto_be_created);
@@ -184,7 +185,7 @@ END_MESSAGE
   my ($rotation, $target_page);
   for (my $thisSignature = 0; $thisSignature <= $lastSignature; ++$thisSignature) {
     for (0..15) {
-      newPageInOutputFile() if $_ % $pgPerOutputPage == 0;
+      &newPageInOutputFile if $_ % $pgPerOutputPage == 0;
       $target_page = $p[$_] + 16 * $thisSignature;
       next if $target_page > $inpPgNum;
 
@@ -195,18 +196,18 @@ END_MESSAGE
       last if $numPagImposed == $inpPgNum;
     }
   }
-  closeInputFile();
-  closeOutputFile();
+  &closeInputFile;
+  &closeOutputFile;
 }
 
-main() if not caller();
+&main if not caller();
 
 
 ##########################################################
 sub newPageInOutputFile {
 ##########################################################
   die "[!] No output file, you must call openOutputFile first.\n" if !$Gpos;
-  writePage() if $Gstream;
+  &writePage if $Gstream;
 
   ++$GobjNr;
   $GpageObjNr = $GobjNr;
@@ -235,7 +236,7 @@ sub copyPageFromInputToOutput {
   die "[!] Page ${pagenumber} in ${GinFile} can't be used. Concatenate streams!\n"
     if !defined $refNr;
   die "[!] Page ${pagenumber} doesn't exist in file ${GinFile}.\n" if !$refNr;
-  writePageObjectsToOutputFile();
+  &writePageObjectsToOutputFile;
 
   $Gstream .= "q\n". calcRotateMatrix($x, $y, $rotate) ."\n/Gs0 gs\n/${name} Do\nQ\n";
   $GpageXObject{$name} = $refNr;
@@ -317,8 +318,8 @@ sub writePage {
     $Gparents[0] = $GobjNr;
   }
   my $parent = $Gparents[0];
-  my $resourceObjectNr = writePageResourceDict(createPageResourceDict());
-  writePageStream();
+  my $resourceObjectNr = writePageResourceDict(&createPageResourceDict);
+  &writePageStream;
   writePageResources($parent, $resourceObjectNr);
   ++$Gcounts[0];
   writePageNodes(8) if $Gcounts[0] > 9;
@@ -331,8 +332,8 @@ sub closeOutputFile {
 ##########################################################
   return if !$Gpos;
 
-  writePage() if $Gstream;
-  my $endNode = writeEndNode();
+  &writePage if $Gstream;
+  my $endNode = &writeEndNode;
 
   my $out_line = "1 0 obj<</Type/Catalog/Pages ${endNode} 0 R>>endobj\n";
   $Gobject[1] = $Gpos;
@@ -472,9 +473,9 @@ sub getRootAndMapGobjects {
   }
 
   # stat[7] = filesize
-  die "[!] Invalid XREF. Aborting.\n" if $xref > getInputFileWeight();
+  die "[!] Invalid XREF. Aborting.\n" if $xref > &getInputFileWeight;
   populateGobjects($xref);
-  $tempRoot = getRootFromTraditionalXrefSection();
+  $tempRoot = &getRootFromTraditionalXrefSection;
   return 0 unless $tempRoot; # No Root object in ${GinFile}, aborting
   return $tempRoot;
 }
@@ -485,14 +486,14 @@ sub mapGobjectsFromTraditionalXref {
 ##########################################################
   my ( $idx, $qty, $readBytes );
   sysseek $IN_FILE, $_[0], 0;
-  ($qty, $idx) = extractXrefSection();
+  ($qty, $idx) = &extractXrefSection;
   while ($qty) {
     for (1..$qty) {
       sysread $IN_FILE, $readBytes, 20;
       $GObjects{$idx} = $1 if $readBytes =~ m'^\s?(\d{10}) \d{5} n';
       ++$idx;
     }
-    ($qty, $idx) = extractXrefSection();
+    ($qty, $idx) = &extractXrefSection;
   }
   return;
 }
@@ -515,7 +516,7 @@ sub populateGobjects {
     die "[!] File '${GinFile}' has a malformed xref table.\n";
   }
 
-  addSizeToGObjects();
+  &addSizeToGObjects;
   return;
 }
 
@@ -580,11 +581,11 @@ sub writePageObjectsToOutputFile {
 ##########################################################
 sub setOutputPageDimensionAndSchema {
 ##########################################################
-  die "[!] File '${GinFile}' is not a valid v1.4 PDF.\n" 
-    unless getPageSizeAndSetMediabox();
+  die "[!] File '${GinFile}' is not a valid v1.4 PDF.\n"
+    unless &getPageSizeAndSetMediabox;
 
   my $surface = $GmediaBox[2]*$GmediaBox[3];
-  my $measuresInMm = 
+  my $measuresInMm =
     int($GmediaBox[2] / 72 * 25.4) . " x " . int($GmediaBox[3] / 72 * 25.4) . " mm";
 
   for ($surface) {
@@ -619,7 +620,7 @@ sub getPage {
 ##########################################################
   my $pagenumber = $_[0];
   die "[!] Page requested (${pagenumber}) does not exist. Aborting.\n"
-    if $pagenumber > getInputPageCount();
+    if $pagenumber > &getInputPageCount;
   my ($formRes, $formCont);
 
   # Find root:
@@ -789,7 +790,7 @@ sub openInputFile {
 ##########################################################
   $GinFile = $_[0];
   my ( $inputPageSize, $inputPageCount, $c );
-  die "[!] File '${GinFile}' is empty.\n" if ! getInputFileWeight();
+  die "[!] File '${GinFile}' is empty.\n" if ! &getInputFileWeight;
 
   open($IN_FILE, q{<}, $GinFile) or die "[!] Couldn't open '${GinFile}'.\n";
   binmode $IN_FILE;
@@ -798,11 +799,11 @@ sub openInputFile {
   die "[!] File '${GinFile}' is not a valid v1.4 PDF file.\n" if $c ne "%PDF-";
 
   # Find root
-  $GrootNr = getRootAndMapGobjects();
+  $GrootNr = &getRootAndMapGobjects;
   die "[!] File '${GinFile}' is not a valid v1.4 PDF file.\n" unless $GrootNr > 0;
 
-  $inputPageSize = setOutputPageDimensionAndSchema();
-  $inputPageCount = getInputPageCount();
+  $inputPageSize = &setOutputPageDimensionAndSchema;
+  $inputPageCount = &getInputPageCount;
 
   return ($inputPageCount, $inputPageSize);
 }
@@ -820,7 +821,7 @@ sub getInputFileWeight {
 ##########################################################
 sub addSizeToGObjects {
 ##########################################################
-  my $size = getInputFileWeight();
+  my $size = &getInputFileWeight;
   # Objects are sorted numerically (<=>) and in reverse order ($b $a)
   # according to their offset in the file: last first
   my @offset = sort { $GObjects{$b} <=> $GObjects{$a} } keys %GObjects;
@@ -839,16 +840,20 @@ sub addSizeToGObjects {
 ##########################################################
 sub update_references_and_populate_to_be_created {
 ##########################################################
-  # $xform translates an old object reference to a new one
-  # and populates a table with what objects must be created
-  state %known;
-  my $xform = sub {
-    return $known{$1} if exists $known{$1};
-    push @Gto_be_created, [ $1, ++$GobjNr ];
-    $known{$1} = $GobjNr; # implicit return value (faster)
-  };
-  $_[0] =~ s/\b(\d+)\s+\d+\s+R\b/&$xform . " 0 R"/eg;
+  $_[0] =~ s/\b(\d+)\s+\d+\s+R\b/&xform . " 0 R"/eg;
   return;
+}
+
+
+# xform translates an old object reference to a new one
+# and populates a table with what objects must be created
+##########################################################
+sub xform {
+##########################################################
+  state %known;
+  return $known{$1} if exists $known{$1};
+  push @Gto_be_created, [ $1, ++$GobjNr ];
+  $known{$1} = $GobjNr; # implicit return value (faster)
 }
 
 
@@ -871,7 +876,7 @@ sub extractXrefSection {
 ##########################################################
 sub openOutputFile {
 ##########################################################
-  closeOutputFile() if $Gpos;
+  &closeOutputFile if $Gpos;
 
   my $outputfile = $_[0];
   my $pdf_signature = "%PDF-1.4\n%\â\ã\Ï\Ó\n"; # Keep it far from file beginning!
@@ -884,7 +889,7 @@ sub openOutputFile {
   $GobjNr      = 2;  # Objeto reservado 1 para raíz y 2 para nodo de pág. inicial
   $Gparents[0] = 2;
 
-  setInitGrState();
+  &setInitGrState;
   return;
 }
 
