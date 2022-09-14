@@ -4,7 +4,7 @@ use v5.10;
 use strict;
 # use warnings;
 $^W = 0;
-our $VERSION = "1.28";
+our $VERSION = "1.30";
 
 my ($GinFile, $GpageObjNr, $GrootNr, $Gpos, $GobjNr, $Gstream, $GoWid, $GoHei);
 my (@Gkids, @Gcounts, @GmediaBox, @Gobject, @Gparents, @Gto_be_created);
@@ -943,6 +943,6 @@ into a new PDF file. Input PDF should:
 2. Consist of vertical-oriented pages of the same size;
 
 3. Use page sizes of A5 or A6 or Half Letter or Quarter Letter
-or Half Legal or Quarter Legal.
+or Half Legal or Quarter Legal of Letter.
 
 =cut
