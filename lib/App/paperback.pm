@@ -4,7 +4,7 @@ use v5.10;
 use strict;
 # use warnings;
 $^W = 0;
-our $VERSION = "1.30";
+our $VERSION = "1.31";
 
 my ($GinFile, $GpageObjNr, $GrootNr, $Gpos, $GobjNr, $Gstream, $GoWid, $GoHei);
 my (@Gkids, @Gcounts, @GmediaBox, @Gobject, @Gparents, @Gto_be_created);
@@ -61,11 +61,11 @@ my @P_4UP_13PLUS = (16,1,13,4,2,15,3,14,12,5,9,8,6,11,7,10);
 my @P_4UP_9PLUS = (12,1,9,4,2,11,3,10,6,7,9999,9999,8,5);
 my @P_4UP_5PLUS = (8,1,5,4,2,7,3,6);
 my @P_4UP_1PLUS = (4,1,9999,9999,2,3);
-my @X_A6_ON_A4 = (0,$CW,$CW,$AW,0,$CW,$CW,$AW,0,$CW,$CW,$AW,0,$CW,$CW,$AW);
+my @X_A6_ON_A4 = (000,$CW,$CW,$AW,000,$CW,$CW,$AW,000,$CW,$CW,$AW,000,$CW,$CW,$AW);
 my @Y_A6_ON_A4 = ($CG,$CG,$CH,$CH,$CG,$CG,$CH,$CH,$CG,$CG,$CH,$CH,$CG,$CG,$CH,$CH);
-my @X_QT_ON_LT = (0,$FW,$FW,$DW,0,$FW,$FW,$DW,0,$FW,$FW,$DW,0,$FW,$FW,$DW);
+my @X_QT_ON_LT = (000,$FW,$FW,$DW,000,$FW,$FW,$DW,000,$FW,$FW,$DW,000,$FW,$FW,$DW);
 my @Y_QT_ON_LT = ($FH,$FH,$FH,$FH,$FH,$FH,$FH,$FH,$FH,$FH,$FH,$FH,$FH,$FH,$FH,$FH);
-my @X_QG_ON_LG = (0,$IW,$IW,$GW,0,$IW,$IW,$GW,0,$IW,$IW,$GW,0,$IW,$IW,$GW);
+my @X_QG_ON_LG = (000,$IW,$IW,$GW,000,$IW,$IW,$GW,000,$IW,$IW,$GW,000,$IW,$IW,$GW);
 my @Y_QG_ON_LG = ($IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH);
 
 # Page reordering and position offset schemas for "2 up":
@@ -73,16 +73,16 @@ my @P_2UP_13PLUS = (1,16,2,15,3,14,4,13,5,12,6,11,7,10,8,9);
 my @P_2UP_9PLUS = (1,12,2,11,3,10,4,9,5,8,6,7);
 my @P_2UP_5PLUS = (1,8,2,7,3,6,4,5);
 my @P_2UP_1PLUS = (1,4,2,3);
-my @X_A5_ON_A4 = ($BH,$BH,0,0,$BH,$BH,0,0,$BH,$BH,0,0,$BH,$BH,0,0);
-my @Y_A5_ON_A4 = ($BG,0,$AH,$BG,$BG,0,$AH,$BG,$BG,0,$AH,$BG,$BG,0,$AH,$BG);
-my @X_HT_ON_LT = ($EH,$EH,0,0,$EH,$EH,0,0,$EH,$EH,0,0,$EH,$EH,0,0);
-my @Y_HT_ON_LT = ($EW,0,$DH,$EW,$EW,0,$DH,$EW,$EW,0,$DH,$EW,$EW,0,$DH,$EW);
-my @X_HG_ON_LG = ($HH,$HH,0,0,$HH,$HH,0,0,$HH,$HH,0,0,$HH,$HH,0,0);
-my @Y_HG_ON_LG = ($HW,0,$GH,$HW,$HW,0,$GH,$HW,$HW,0,$GH,$HW,$HW,0,$GH,$HW);
-my @X_LT_ON_TA = ($DH,$DH,0,0,$DH,$DH,0,0,$DH,$DH,0,0,$DH,$DH,0,0);
-my @Y_LT_ON_TA = ($DW,0,$KH,$DW,$DW,0,$KH,$DW,$DW,0,$KH,$DW,$DW,0,$KH,$DW);
-my @X_A4_ON_A3 = ($AH,$AH,0,0,$AH,$AH,0,0,$AH,$AH,0,0,$AH,$AH,0,0);
-my @Y_A4_ON_A3 = ($AW,0,$JH,$AW,$AW,0,$JH,$AW,$AW,0,$JH,$AW,$AW,0,$JH,$AW);
+my @X_A5_ON_A4 = ($BH,$BH,000,000,$BH,$BH,000,000,$BH,$BH,000,000,$BH,$BH,000,000);
+my @Y_A5_ON_A4 = ($BG,000,$AH,$BG,$BG,000,$AH,$BG,$BG,000,$AH,$BG,$BG,000,$AH,$BG);
+my @X_HT_ON_LT = ($EH,$EH,000,000,$EH,$EH,000,000,$EH,$EH,000,000,$EH,$EH,000,000);
+my @Y_HT_ON_LT = ($EW,000,$DH,$EW,$EW,000,$DH,$EW,$EW,000,$DH,$EW,$EW,000,$DH,$EW);
+my @X_HG_ON_LG = ($HH,$HH,000,000,$HH,$HH,000,000,$HH,$HH,000,000,$HH,$HH,000,000);
+my @Y_HG_ON_LG = ($HW,000,$GH,$HW,$HW,000,$GH,$HW,$HW,000,$GH,$HW,$HW,000,$GH,$HW);
+my @X_LT_ON_TA = ($DH,$DH,000,000,$DH,$DH,000,000,$DH,$DH,000,000,$DH,$DH,000,000);
+my @Y_LT_ON_TA = ($DW,000,$KH,$DW,$DW,000,$KH,$DW,$DW,000,$KH,$DW,$DW,000,$KH,$DW);
+my @X_A4_ON_A3 = ($AH,$AH,000,000,$AH,$AH,000,000,$AH,$AH,000,000,$AH,$AH,000,000);
+my @Y_A4_ON_A3 = ($AW,000,$JH,$AW,$AW,000,$JH,$AW,$AW,000,$JH,$AW,$AW,000,$JH,$AW);
 
 my ( $IN_FILE, $OUT_FILE );
 
@@ -105,11 +105,11 @@ ${sayUsage}
   always assumed to be composed of vertical pages of the same size.
 
   Input page sizes allowed are A4, A5, A6, Letter, Half Letter, Quarter
-  Letter, Half Legal and Quarter Legal. Other sizes give an error message.
+  Letter, Half Legal, Quarter Legal. Other sizes give an error message.
 
   Only PDF v1.4 is supported as input, although many higher-labeled
   PDF files are correctly handled since they are essentially v1.4 PDF
-  files stamped as something more modern.
+  files stamped as something more modern. Encrypted PDFs are not supported.
 
 ISO 216 normalised (international) page sizes:
 
@@ -396,7 +396,6 @@ sub writeEndNode {
   my $si = $#Gparents;         # index   of the last element
 
   my $min = defined $Gparents[0] ? 0 : 1;
-  # for ( my $i = $min ; $Gparents[$i] ne $endNode; ++$i ) {
   for ( my $i = $min; $i < $si; ++$i ) {
     if ( defined $Gparents[$i] ) { # Only defined if there are kids
       # Find parent of current parent:
@@ -796,7 +795,7 @@ sub openInputFile {
   binmode $IN_FILE;
 
   sysread $IN_FILE, $c, 5;
-  die "[!] File '${GinFile}' is not a valid v1.4 PDF file.\n" if $c ne "%PDF-";
+  die "[!] File '${GinFile}' is not a valid PDF file.\n" if $c ne "%PDF-";
 
   # Find root
   $GrootNr = &getRootAndMapGobjects;
@@ -940,9 +939,11 @@ into a new PDF file. Input PDF should:
 
 1. Conform to version 1.4 of PDF;
 
-2. Consist of vertical-oriented pages of the same size;
+2. Not be encrypted;
 
-3. Use page sizes of A5 or A6 or Half Letter or Quarter Letter
-or Half Legal or Quarter Legal of Letter.
+3. Consist of vertical-oriented pages of the same size;
+
+4. Use one of these page sizes: A4, A5, A6, Half Letter, Quarter Letter,
+Half Legal, Quarter Legal or Letter.
 
 =cut
