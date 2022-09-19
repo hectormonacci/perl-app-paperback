@@ -4,7 +4,7 @@ use v5.10;
 use strict;
 # use warnings;
 $^W = 0;
-our $VERSION = "1.31";
+our $VERSION = "1.32";
 
 my ($GinFile, $GpageObjNr, $GrootNr, $Gpos, $GobjNr, $Gstream, $GoWid, $GoHei);
 my (@Gkids, @Gcounts, @GmediaBox, @Gobject, @Gparents, @Gto_be_created);
@@ -22,8 +22,8 @@ my $BW = 419.5276;  # [B] A5 ~ 148 mm (W)
 my $CH = $BW;       # [C] A6 ~ 148 mm (H)
 my $CW = 297.6378;  # [C] A6 ~ 105 mm (W)
 # + 1 mm (2.8346 pt) to account for rounding in ISO 216 (148+148=296):
-my $CG = 422.3622; # [C] A6 $CH + 1 mm (H)
-my $BG = $CG;      # [B] A5 $BW + 1 mm (W)
+my $CX = 422.3622; # [C] A6 $CH + 1 mm (H)
+my $BX = $CX;      # [B] A5 $BW + 1 mm (W)
 
 # US paper sizes in pt:
 my $DH =  792; # [D] US Letter Full (H)
@@ -62,7 +62,7 @@ my @P_4UP_9PLUS = (12,1,9,4,2,11,3,10,6,7,9999,9999,8,5);
 my @P_4UP_5PLUS = (8,1,5,4,2,7,3,6);
 my @P_4UP_1PLUS = (4,1,9999,9999,2,3);
 my @X_A6_ON_A4 = (000,$CW,$CW,$AW,000,$CW,$CW,$AW,000,$CW,$CW,$AW,000,$CW,$CW,$AW);
-my @Y_A6_ON_A4 = ($CG,$CG,$CH,$CH,$CG,$CG,$CH,$CH,$CG,$CG,$CH,$CH,$CG,$CG,$CH,$CH);
+my @Y_A6_ON_A4 = ($CX,$CX,$CH,$CH,$CX,$CX,$CH,$CH,$CX,$CX,$CH,$CH,$CX,$CX,$CH,$CH);
 my @X_QT_ON_LT = (000,$FW,$FW,$DW,000,$FW,$FW,$DW,000,$FW,$FW,$DW,000,$FW,$FW,$DW);
 my @Y_QT_ON_LT = ($FH,$FH,$FH,$FH,$FH,$FH,$FH,$FH,$FH,$FH,$FH,$FH,$FH,$FH,$FH,$FH);
 my @X_QG_ON_LG = (000,$IW,$IW,$GW,000,$IW,$IW,$GW,000,$IW,$IW,$GW,000,$IW,$IW,$GW);
@@ -74,7 +74,7 @@ my @P_2UP_9PLUS = (1,12,2,11,3,10,4,9,5,8,6,7);
 my @P_2UP_5PLUS = (1,8,2,7,3,6,4,5);
 my @P_2UP_1PLUS = (1,4,2,3);
 my @X_A5_ON_A4 = ($BH,$BH,000,000,$BH,$BH,000,000,$BH,$BH,000,000,$BH,$BH,000,000);
-my @Y_A5_ON_A4 = ($BG,000,$AH,$BG,$BG,000,$AH,$BG,$BG,000,$AH,$BG,$BG,000,$AH,$BG);
+my @Y_A5_ON_A4 = ($BX,000,$AH,$BX,$BX,000,$AH,$BX,$BX,000,$AH,$BX,$BX,000,$AH,$BX);
 my @X_HT_ON_LT = ($EH,$EH,000,000,$EH,$EH,000,000,$EH,$EH,000,000,$EH,$EH,000,000);
 my @Y_HT_ON_LT = ($EW,000,$DH,$EW,$EW,000,$DH,$EW,$EW,000,$DH,$EW,$EW,000,$DH,$EW);
 my @X_HG_ON_LG = ($HH,$HH,000,000,$HH,$HH,000,000,$HH,$HH,000,000,$HH,$HH,000,000);
@@ -166,20 +166,16 @@ END_MESSAGE
   my ($rot_extra, @p);
   if ($pgPerOutputPage == 4) {
     $rot_extra = 0;
-    for ($inpPgNum) {
-      if    ($_ >= 13) { @p = @P_4UP_13PLUS; }
-      elsif ($_ >= 9 ) { @p = @P_4UP_9PLUS;  }
-      elsif ($_ >= 5 ) { @p = @P_4UP_5PLUS;  }
-      else             { @p = @P_4UP_1PLUS;  }
-    }
+    if    ($inpPgNum >= 13) { @p = @P_4UP_13PLUS; }
+    elsif ($inpPgNum >= 9 ) { @p = @P_4UP_9PLUS;  }
+    elsif ($inpPgNum >= 5 ) { @p = @P_4UP_5PLUS;  }
+    else                    { @p = @P_4UP_1PLUS;  }
   } else {
     $rot_extra = 90;
-    for ($inpPgNum) {
-      if    ($_ >= 13) { @p = @P_2UP_13PLUS; }
-      elsif ($_ >= 9 ) { @p = @P_2UP_9PLUS;  }
-      elsif ($_ >= 5 ) { @p = @P_2UP_5PLUS;  }
-      else             { @p = @P_2UP_1PLUS;  }
-    }
+    if    ($inpPgNum >= 13) { @p = @P_2UP_13PLUS; }
+    elsif ($inpPgNum >= 9 ) { @p = @P_2UP_9PLUS;  }
+    elsif ($inpPgNum >= 5 ) { @p = @P_2UP_5PLUS;  }
+    else                    { @p = @P_2UP_1PLUS;  }
   }
   my $lastSignature = $inpPgNum >> 4;
   my ($rotation, $target_page);
