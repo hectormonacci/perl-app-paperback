@@ -4,13 +4,14 @@ use v5.10;
 use strict;
 # use warnings;
 $^W = 0;
-our $VERSION = "1.32";
+our $VERSION = "1.33";
 
 my ($GinFile, $GpageObjNr, $GrootNr, $Gpos, $GobjNr, $Gstream, $GoWid, $GoHei);
 my (@Gkids, @Gcounts, @GmediaBox, @Gobject, @Gparents, @Gto_be_created);
 my (%GpageXObject, %GObjects, %Gpaper);
 
 my $cr = '\s*(?:\015|\012|(?:\015\012))';
+my ( $IN_FILE, $OUT_FILE );
 
 # ISO 216 paper sizes in pt (four decimals will do):
 my $JH = 1190.5512; # [J] A3 ~ 420 mm (H)
@@ -41,62 +42,60 @@ my $IW =  $FW; # [I] US Legal Quarter (W)
 my $KH = 1224; # [K] US Tabloid (H)
 my $KW =  $DH; # [K] US Tabloid (W)
 
-# Paper surfaces in square pts (expressed as HxW in points):
-%Gpaper = (
-  QuarterLetter => $FH*$FW, # =   121_176
-  A6            => $CH*$CW, # ~   124_867
-  QuarterLegal  => $IH*$IW, # =   154_224
-  HalfLetter    => $EH*$EW, # =   242_352
-  A5            => $BH*$BW, # ~   249_735
-  HalfLegal     => $HH*$HW, # =   308_448
-  Letter        => $DH*$DW, # =   484_704
-  A4            => $AH*$AW, # ~   501_156
-  Legal         => $GH*$GW, # =   616_896
-  Tabloid       => $KH*$KW, # =   969_408
-  A3            => $JH*$JW, # ~ 1_002_312
-);
-
-# Page reordering and position offset schemas for "4 up":
-my @P_4UP_13PLUS = (16,1,13,4,2,15,3,14,12,5,9,8,6,11,7,10);
-my @P_4UP_9PLUS = (12,1,9,4,2,11,3,10,6,7,9999,9999,8,5);
-my @P_4UP_5PLUS = (8,1,5,4,2,7,3,6);
-my @P_4UP_1PLUS = (4,1,9999,9999,2,3);
-my @X_A6_ON_A4 = (000,$CW,$CW,$AW,000,$CW,$CW,$AW,000,$CW,$CW,$AW,000,$CW,$CW,$AW);
-my @Y_A6_ON_A4 = ($CX,$CX,$CH,$CH,$CX,$CX,$CH,$CH,$CX,$CX,$CH,$CH,$CX,$CX,$CH,$CH);
-my @X_QT_ON_LT = (000,$FW,$FW,$DW,000,$FW,$FW,$DW,000,$FW,$FW,$DW,000,$FW,$FW,$DW);
-my @Y_QT_ON_LT = ($FH,$FH,$FH,$FH,$FH,$FH,$FH,$FH,$FH,$FH,$FH,$FH,$FH,$FH,$FH,$FH);
-my @X_QG_ON_LG = (000,$IW,$IW,$GW,000,$IW,$IW,$GW,000,$IW,$IW,$GW,000,$IW,$IW,$GW);
-my @Y_QG_ON_LG = ($IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH);
-
-# Page reordering and position offset schemas for "2 up":
-my @P_2UP_13PLUS = (1,16,2,15,3,14,4,13,5,12,6,11,7,10,8,9);
-my @P_2UP_9PLUS = (1,12,2,11,3,10,4,9,5,8,6,7);
-my @P_2UP_5PLUS = (1,8,2,7,3,6,4,5);
-my @P_2UP_1PLUS = (1,4,2,3);
-my @X_A5_ON_A4 = ($BH,$BH,000,000,$BH,$BH,000,000,$BH,$BH,000,000,$BH,$BH,000,000);
-my @Y_A5_ON_A4 = ($BX,000,$AH,$BX,$BX,000,$AH,$BX,$BX,000,$AH,$BX,$BX,000,$AH,$BX);
-my @X_HT_ON_LT = ($EH,$EH,000,000,$EH,$EH,000,000,$EH,$EH,000,000,$EH,$EH,000,000);
-my @Y_HT_ON_LT = ($EW,000,$DH,$EW,$EW,000,$DH,$EW,$EW,000,$DH,$EW,$EW,000,$DH,$EW);
-my @X_HG_ON_LG = ($HH,$HH,000,000,$HH,$HH,000,000,$HH,$HH,000,000,$HH,$HH,000,000);
-my @Y_HG_ON_LG = ($HW,000,$GH,$HW,$HW,000,$GH,$HW,$HW,000,$GH,$HW,$HW,000,$GH,$HW);
-my @X_LT_ON_TA = ($DH,$DH,000,000,$DH,$DH,000,000,$DH,$DH,000,000,$DH,$DH,000,000);
-my @Y_LT_ON_TA = ($DW,000,$KH,$DW,$DW,000,$KH,$DW,$DW,000,$KH,$DW,$DW,000,$KH,$DW);
-my @X_A4_ON_A3 = ($AH,$AH,000,000,$AH,$AH,000,000,$AH,$AH,000,000,$AH,$AH,000,000);
-my @Y_A4_ON_A3 = ($AW,000,$JH,$AW,$AW,000,$JH,$AW,$AW,000,$JH,$AW,$AW,000,$JH,$AW);
-
-my ( $IN_FILE, $OUT_FILE );
-
 
 ##########################################################
 sub main {
 ##########################################################
   my $input = $ARGV[0];
+
+  # Paper surfaces in square pts (expressed as HxW in points):
+  %Gpaper = (
+    QuarterLetter => $FH*$FW, # =   121_176
+    A6            => $CH*$CW, # ~   124_867
+    QuarterLegal  => $IH*$IW, # =   154_224
+    HalfLetter    => $EH*$EW, # =   242_352
+    A5            => $BH*$BW, # ~   249_735
+    HalfLegal     => $HH*$HW, # =   308_448
+    Letter        => $DH*$DW, # =   484_704
+    A4            => $AH*$AW, # ~   501_156
+    Legal         => $GH*$GW, # =   616_896
+    Tabloid       => $KH*$KW, # =   969_408
+    A3            => $JH*$JW, # ~ 1_002_312
+  );
+
+  # Page reordering and position offset schemas for "4 up":
+  my @P_4UP_13PLUS = (16,1,13,4,2,15,3,14,12,5,9,8,6,11,7,10);
+  my @P_4UP_9PLUS = (12,1,9,4,2,11,3,10,6,7,9999,9999,8,5);
+  my @P_4UP_5PLUS = (8,1,5,4,2,7,3,6);
+  my @P_4UP_1PLUS = (4,1,9999,9999,2,3);
+  my @X_A6_ON_A4 = (000,$CW,$CW,$AW,000,$CW,$CW,$AW,000,$CW,$CW,$AW,000,$CW,$CW,$AW);
+  my @Y_A6_ON_A4 = ($CX,$CX,$CH,$CH,$CX,$CX,$CH,$CH,$CX,$CX,$CH,$CH,$CX,$CX,$CH,$CH);
+  my @X_QT_ON_LT = (000,$FW,$FW,$DW,000,$FW,$FW,$DW,000,$FW,$FW,$DW,000,$FW,$FW,$DW);
+  my @Y_QT_ON_LT = ($FH,$FH,$FH,$FH,$FH,$FH,$FH,$FH,$FH,$FH,$FH,$FH,$FH,$FH,$FH,$FH);
+  my @X_QG_ON_LG = (000,$IW,$IW,$GW,000,$IW,$IW,$GW,000,$IW,$IW,$GW,000,$IW,$IW,$GW);
+  my @Y_QG_ON_LG = ($IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH,$IH);
+
+  # Page reordering and position offset schemas for "2 up":
+  my @P_2UP_13PLUS = (1,16,2,15,3,14,4,13,5,12,6,11,7,10,8,9);
+  my @P_2UP_9PLUS = (1,12,2,11,3,10,4,9,5,8,6,7);
+  my @P_2UP_5PLUS = (1,8,2,7,3,6,4,5);
+  my @P_2UP_1PLUS = (1,4,2,3);
+  my @X_A5_ON_A4 = ($BH,$BH,000,000,$BH,$BH,000,000,$BH,$BH,000,000,$BH,$BH,000,000);
+  my @Y_A5_ON_A4 = ($BX,000,$AH,$BX,$BX,000,$AH,$BX,$BX,000,$AH,$BX,$BX,000,$AH,$BX);
+  my @X_HT_ON_LT = ($EH,$EH,000,000,$EH,$EH,000,000,$EH,$EH,000,000,$EH,$EH,000,000);
+  my @Y_HT_ON_LT = ($EW,000,$DH,$EW,$EW,000,$DH,$EW,$EW,000,$DH,$EW,$EW,000,$DH,$EW);
+  my @X_HG_ON_LG = ($HH,$HH,000,000,$HH,$HH,000,000,$HH,$HH,000,000,$HH,$HH,000,000);
+  my @Y_HG_ON_LG = ($HW,000,$GH,$HW,$HW,000,$GH,$HW,$HW,000,$GH,$HW,$HW,000,$GH,$HW);
+  my @X_LT_ON_TA = ($DH,$DH,000,000,$DH,$DH,000,000,$DH,$DH,000,000,$DH,$DH,000,000);
+  my @Y_LT_ON_TA = ($DW,000,$KH,$DW,$DW,000,$KH,$DW,$DW,000,$KH,$DW,$DW,000,$KH,$DW);
+  my @X_A4_ON_A3 = ($AH,$AH,000,000,$AH,$AH,000,000,$AH,$AH,000,000,$AH,$AH,000,000);
+  my @Y_A4_ON_A3 = ($AW,000,$JH,$AW,$AW,000,$JH,$AW,$AW,000,$JH,$AW,$AW,000,$JH,$AW);
+
   my ($inpPgNum, $inpPgSize);
   my $numPagImposed = 0;
   my $sayUsage = "Usage: paperback file.pdf (will produce 'file-paperback.pdf').";
   my $sayVersion = "This is paperback v${VERSION}, (c) 2022 Hector M. Monacci.";
   my $sayHelp = <<"END_MESSAGE";
-
 ${sayUsage}
 
   All pages in the input PDF file will be imposed on a new PDF with
@@ -166,21 +165,19 @@ END_MESSAGE
   my ($rot_extra, @p);
   if ($pgPerOutputPage == 4) {
     $rot_extra = 0;
-    if    ($inpPgNum >= 13) { @p = @P_4UP_13PLUS; }
-    elsif ($inpPgNum >= 9 ) { @p = @P_4UP_9PLUS;  }
-    elsif ($inpPgNum >= 5 ) { @p = @P_4UP_5PLUS;  }
-    else                    { @p = @P_4UP_1PLUS;  }
+    @p = $inpPgNum >= 13 ? @P_4UP_13PLUS :
+      $inpPgNum >= 9     ? @P_4UP_9PLUS  :
+      $inpPgNum >= 5     ? @P_4UP_5PLUS  : @P_4UP_1PLUS;
   } else {
     $rot_extra = 90;
-    if    ($inpPgNum >= 13) { @p = @P_2UP_13PLUS; }
-    elsif ($inpPgNum >= 9 ) { @p = @P_2UP_9PLUS;  }
-    elsif ($inpPgNum >= 5 ) { @p = @P_2UP_5PLUS;  }
-    else                    { @p = @P_2UP_1PLUS;  }
+    @p = $inpPgNum >= 13 ? @P_2UP_13PLUS :
+      $inpPgNum >= 9     ? @P_2UP_9PLUS  :
+      $inpPgNum >= 5     ? @P_2UP_5PLUS  : @P_2UP_1PLUS;
   }
   my $lastSignature = $inpPgNum >> 4;
   my ($rotation, $target_page);
   for (my $thisSignature = 0; $thisSignature <= $lastSignature; ++$thisSignature) {
-    for (0..15) {
+    for (0 .. 15) {
       &newPageInOutputFile if $_ % $pgPerOutputPage == 0;
       $target_page = $p[$_] + 16 * $thisSignature;
       next if $target_page > $inpPgNum;
@@ -338,7 +335,7 @@ sub closeOutputFile {
   my $startxref = $Gpos;
   my $xrefQty = $qty + 1;
   $out_line = "xref\n0 ${xrefQty}\n0000000000 65535 f \n";
-  $out_line .= sprintf "%.10d 00000 n \n", $_ for @Gobject[1..$qty];
+  $out_line .= sprintf "%.10d 00000 n \n", $_ for @Gobject[1 .. $qty];
   $out_line .= "trailer\n<<\n/Size ${xrefQty}\n/Root 1 0 R\n"
     . ">>\nstartxref\n${startxref}\n%%EOF\n";
 
@@ -467,7 +464,6 @@ sub getRootAndMapGobjects {
     return 0;
   }
 
-  # stat[7] = filesize
   die "[!] Invalid XREF. Aborting.\n" if $xref > &getInputFileWeight;
   populateGobjects($xref);
   $tempRoot = &getRootFromTraditionalXrefSection;
@@ -483,7 +479,7 @@ sub mapGobjectsFromTraditionalXref {
   sysseek $IN_FILE, $_[0], 0;
   ($qty, $idx) = &extractXrefSection;
   while ($qty) {
-    for (1..$qty) {
+    for (1 .. $qty) {
       sysread $IN_FILE, $readBytes, 20;
       $GObjects{$idx} = $1 if $readBytes =~ m'^\s?(\d{10}) \d{5} n';
       ++$idx;
@@ -535,11 +531,10 @@ sub getContentOfObjectNr {
 ##########################################################
   my $index = $_[0];
 
-  return 0 if (! defined $GObjects{$index});   # A non-1.4 PDF
-  my $buf;
+  return 0 if ! defined $GObjects{$index};   # A non-1.4 PDF
   my ($offset, $size) = @{ $GObjects{$index} };
   sysseek $IN_FILE, $offset, 0;
-  sysread $IN_FILE, $buf, $size;
+  sysread $IN_FILE, my $buf, $size;
   return $buf;
 }
 
