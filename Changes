@@ -1,5 +1,8 @@
 Revision history for Perl module and script App::paperback.
 
+1.34  Tue Sep 20 15:00:00 2022
+	- Shorten x and y offset values using function "x"
+
 1.33  Tue Sep 20 09:00:00 2022
 	- Syntax perlification and variable relocation
 
