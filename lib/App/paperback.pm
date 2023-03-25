@@ -4,7 +4,7 @@ use v5.10;
 use strict;
 # use warnings;
 $^W = 0;
-our $VERSION = "1.37";
+our $VERSION = "1.38";
 
 my ($GinFile, $GpageObjNr, $GrootNr, $Gpos, $GobjNr, $Gstream, $GoWid, $GoHei);
 my (@Gkids, @Gcounts, @GmediaBox, @Gobject, @Gparents, @Gto_be_created);
@@ -536,23 +536,23 @@ sub getContentOfObjectNr {
 ##########################################################
 sub writePageObjectsToOutputFile {
 ##########################################################
-  my ($objectContent, $out_line, $part, $strPos, $old_one, $new_one);
+  my ($ObjContent, $out_line, $part, $strPos, $old_one, $new_one);
 
   for (@Gto_be_created) {
     $old_one = $_->[0];
     $new_one = $_->[1];
-    $objectContent = getContentOfObjectNr($old_one);
-    if ( $objectContent =~ m'^(\d+ \d+ obj\s*<<)(.+)(>>\s*stream)'s ) {
+    $ObjContent = getContentOfObjectNr($old_one);
+    if ( $ObjContent =~ m'^(\d+ \d+ obj\s*<<)(.+)(>>\s*stream)'s ) {
       $part = $2;
       $strPos = length($1) + length($2) + length($3);
       update_references_and_populate_to_be_created($part);
       $out_line = "${new_one} 0 obj\n<<${part}>>stream";
-      $out_line .= substr( $objectContent, $strPos );
+      $out_line .= substr( $ObjContent, $strPos );
     } else {
-      $objectContent = substr( $objectContent, length($1) )
-        if $objectContent =~ m'^(\d+ \d+ obj)\b';
-      update_references_and_populate_to_be_created($objectContent);
-      $out_line = "${new_one} 0 obj ${objectContent}";
+      $ObjContent = substr( $ObjContent, length($1) )
+        if $ObjContent =~ m'^(\d+ \d+ obj)\b';
+      update_references_and_populate_to_be_created($ObjContent);
+      $out_line = "${new_one} 0 obj ${ObjContent}";
     }
     $Gobject[$new_one] = $Gpos;
     $Gpos += syswrite $OUT_FILE, $out_line;
@@ -607,15 +607,18 @@ sub getPage {
     if $pagenumber > &getInputPageCount;
   my ($formRes, $formCont);
 
-  # Find root:
-  my $objectContent = getContentOfObjectNr($GrootNr);
-
-  # Find pages:
-  die "[!] Didn't find Pages section in '${GinFile}'. Aborting.\n"
-    unless $objectContent =~ m'/Pages\s+(\d+)\s+\d+\s+R';
-  $objectContent = getContentOfObjectNr($1);
-  $objectContent = xformObjForThisPage($objectContent, $pagenumber);
-  ($formRes, $formCont) = parseAsResourcesAndContentRef($objectContent);
+  state $rootObjContent;
+  state $pagesObjContent;
+  if ($rootObjContent == '') {
+    # Find root:
+  	$rootObjContent = getContentOfObjectNr($GrootNr);
+    # Find "Pages" section in root object:
+    die "[!] Didn't find Pages section in '${GinFile}'. Aborting.\n"
+      unless $rootObjContent =~ m'/Pages\s+(\d+)\s+\d+\s+R';
+    $pagesObjContent = getContentOfObjectNr($1);
+  }
+  my $thisPageObjContent = xformObjForThisPage($pagesObjContent, $pagenumber);
+  ($formRes, $formCont) = parseAsResourcesAndContentRef($thisPageObjContent);
   # return ($formRes, $formCont);
 }
 
@@ -625,8 +628,8 @@ sub writeRes {
 ##########################################################
   my ($formRes, $objNr) = ($_[0], $_[1]);
 
-  my $objectContent = getContentOfObjectNr($objNr);
-  $objectContent =~ m'^(\d+ \d+ obj\s*<<)(.+)(>>\s*stream)'s;
+  my $ObjContent = getContentOfObjectNr($objNr);
+  $ObjContent =~ m'^(\d+ \d+ obj\s*<<)(.+)(>>\s*stream)'s;
   my $strPos = length($1) + length($2) + length($3);
   my $newPart = "<</Type/XObject/Subtype/Form/FormType 1/Resources ${formRes}"
     . "/BBox [@{GmediaBox}] ${2}";
@@ -636,7 +639,7 @@ sub writeRes {
   my $reference = $GobjNr;
   update_references_and_populate_to_be_created($newPart);
   my $out_line = "${reference} 0 obj\n${newPart}>>\nstream";
-  $out_line .= substr( $objectContent, $strPos );
+  $out_line .= substr( $ObjContent, $strPos );
   $Gpos += syswrite $OUT_FILE, $out_line;
   return $reference;
 }
@@ -645,10 +648,10 @@ sub writeRes {
 ##########################################################
 sub xformObjForThisPage {
 ##########################################################
-  my ($objectContent, $pagenumber) = ($_[0], $_[1]);
+  my ($ObjContent, $pagenumber) = ($_[0], $_[1]);
   my ($vector, @pageObj, @pageObjBackup, $pageAccumulator);
 
-  return 0 unless $objectContent =~ m'/Kids\s*\[([^\]]+)';
+  return 0 unless $ObjContent =~ m'/Kids\s*\[([^\]]+)';
   $vector = $1;
 
   $pageAccumulator = 0;
@@ -659,12 +662,12 @@ sub xformObjForThisPage {
     undef @pageObj;
     last if ! @pageObjBackup; # $pagenumber is > than number of pages in PDF
     for (@pageObjBackup) {
-      $objectContent = getContentOfObjectNr($_);
-      if ( $objectContent =~ m'/Count\s+(\d+)' ) {
+      $ObjContent = getContentOfObjectNr($_);
+      if ( $ObjContent =~ m'/Count\s+(\d+)' ) {
         if ( ( $pageAccumulator + $1 ) < $pagenumber ) {
           $pageAccumulator += $1;
         } else {
-          $vector = $1 if $objectContent =~ m'/Kids\s*\[([^\]]+)' ;
+          $vector = $1 if $ObjContent =~ m'/Kids\s*\[([^\]]+)' ;
           push @pageObj, $1 while $vector =~ m'(\d+)\s+\d+\s+R'g;
           last;
         }
@@ -674,7 +677,7 @@ sub xformObjForThisPage {
       last if $pageAccumulator == $pagenumber;
     }
   }
-  return $objectContent;
+  return $ObjContent;
 }
 
 
@@ -682,17 +685,17 @@ sub xformObjForThisPage {
 sub getPageSizeAndSetMediabox {
 ##########################################################
   # Find root:
-  my $objectContent = getContentOfObjectNr($GrootNr);
+  my $ObjContent = getContentOfObjectNr($GrootNr);
 
   # Find pages:
-  return 0 unless $objectContent =~ m'/Pages\s+(\d+)\s+\d+\s+R';
-  $objectContent = getContentOfObjectNr($1);
-  $objectContent = xformObjForThisPage($objectContent, 1)
-    unless $objectContent =~ m'MediaBox';
+  return 0 unless $ObjContent =~ m'/Pages\s+(\d+)\s+\d+\s+R';
+  $ObjContent = getContentOfObjectNr($1);
+  $ObjContent = xformObjForThisPage($ObjContent, 1)
+    unless $ObjContent =~ m'MediaBox';
 
   # Assume all input PDF pages have the same dimensions as first MediaBox found:
   if (! @GmediaBox) {
-    for ($objectContent) {
+    for ($ObjContent) {
       if (m'MediaBox\s*\[\s*([\S]+)\s+([\S]+)\s+([\S]+)\s+([\S]+)\s*\]') {
         @GmediaBox = ($1, $2, $3, $4);
       } elsif (m'MediaBox\s*(\d+)\s+\d+\s+R\b') { # Pagesize to be found in reference
@@ -756,12 +759,12 @@ sub getInputPageCount {
 ##########################################################
   state $maxPages;
   return $maxPages if defined $maxPages;
-  my $objectContent;
+  my $ObjContent;
 
-  return 0 unless eval { $objectContent = getContentOfObjectNr($GrootNr); 1; };
-  if ( $objectContent =~ m'/Pages\s+(\d+)\s+\d+\s+R' ) {
-    $objectContent = getContentOfObjectNr($1);
-    $maxPages = $1 if $objectContent =~ m'/Count\s+(\d+)';
+  return 0 unless eval { $ObjContent = getContentOfObjectNr($GrootNr); 1; };
+  if ( $ObjContent =~ m'/Pages\s+(\d+)\s+\d+\s+R' ) {
+    $ObjContent = getContentOfObjectNr($1);
+    $maxPages = $1 if $ObjContent =~ m'/Count\s+(\d+)';
   }
   return $maxPages;
 }
