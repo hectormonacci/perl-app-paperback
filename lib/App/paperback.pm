@@ -4,7 +4,7 @@ use v5.10;
 use strict;
 # use warnings;
 $^W = 0;
-our $VERSION = "1.41";
+our $VERSION = "1.42";
 
 my ($GinFile, $GpageObjNr, $GrootNr, $Gpos, $GobjNr, $Gstream, $GoWid, $GoHei, 
   $GpagesObjContent);
