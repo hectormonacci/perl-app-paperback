@@ -4,7 +4,7 @@ use v5.10;
 use strict;
 # use warnings;
 $^W = 0;
-our $VERSION = "1.40";
+our $VERSION = "1.41";
 
 my ($GinFile, $GpageObjNr, $GrootNr, $Gpos, $GobjNr, $Gstream, $GoWid, $GoHei, 
   $GpagesObjContent);
@@ -446,10 +446,10 @@ sub getRootAndMapGobjects {
     while ($buf =~ m'/Prev\s+(\d+)') {
       $xref = $1;
       sysseek $IN_FILE, $xref, 0;
-      sysread $IN_FILE, $buf, 200;
-      # Reading 200 bytes may NOT be enough. Read on till we find 1st %%EOF:
+      sysread $IN_FILE, $buf, 1024;
+      # Reading 1024 bytes may NOT be enough. Read on till we find 1st %%EOF:
       until ($buf =~ m'%%EOF') {
-        sysread $IN_FILE, $buf2, 200;
+        sysread $IN_FILE, $buf2, 1024;
         $buf .= $buf2;
       }
     }
@@ -513,7 +513,7 @@ sub getRootFromTraditionalXrefSection {
   my $readBytes = " ";
   my $buf;
   while ($readBytes) {
-    sysread $IN_FILE, $readBytes, 200;
+    sysread $IN_FILE, $readBytes, 1024;
     $buf .= $readBytes;
     return $1 if $buf =~ m'\/Root\s+(\d+)\s+\d+\s+R';
   }
