@@ -4,7 +4,7 @@ use v5.10;
 use strict;
 # use warnings;
 $^W = 0;
-our $VERSION = "1.39";
+our $VERSION = "1.40";
 
 my ($GinFile, $GpageObjNr, $GrootNr, $Gpos, $GobjNr, $Gstream, $GoWid, $GoHei, 
   $GpagesObjContent);
@@ -94,7 +94,7 @@ sub main {
   my ($inpPgNum, $inpPgSize);
   my $numPagImposed = 0;
   my $sayUsage = "Usage: paperback file.pdf (will produce 'file-paperback.pdf').";
-  my $sayVers = "This is paperback v${VERSION}, (c) 2022 Hector M. Monacci.";
+  my $sayVers = "This is paperback v${VERSION}, (c) 2023 Hector M. Monacci.";
   my $sayHelp = <<"END_MESSAGE";
 ${sayUsage}
 
